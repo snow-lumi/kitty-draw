@@ -8,7 +8,7 @@ mod menus;
 mod canvas;
 
 use crate::canvas::canvas;
-use crate::structs::frame_data::FrameData;
+use crate::structs::frame_state::FrameState;
 use crate::structs::kitty::Kitty;
 
 fn main() -> eframe::Result {
@@ -20,27 +20,28 @@ fn main() -> eframe::Result {
     };
 
     // application state:
-    let mut state = Kitty::new();
-
+    let mut kitty = Kitty::new();
 
     eframe::run_simple_native("kitty draw", options, move |ctx, _frame| {
 
-        let frame_data = ctx.input(|i| -> FrameData {FrameData::new(i)});
+        let frame_state = ctx.input(|i| -> FrameState {FrameState::new(i)});
+
+        kitty.handle_keyboard_input(&frame_state);
 
         // menu where you can choose commands
         egui::TopBottomPanel::top("woof")
             .show_separator_line(true)
-            .show(ctx, menus::command_menu::command_menu(&mut state));
+            .show(ctx, menus::command_menu::command_menu(&mut kitty));
 
         // menu that controls canvas and pointer behavior
         egui::TopBottomPanel::bottom("meow")
             .show_separator_line(true)
-            .show(ctx, menus::bottom_menu::bottom_menu(&mut state));
+            .show(ctx, menus::bottom_menu::bottom_menu(&mut kitty));
 
         // context menu that controls the current command
-        egui::SidePanel::right("boioing").show(ctx, menus::settings_menu::settings_menu_menu(&mut state));
+        egui::SidePanel::right("boioing").show(ctx, menus::settings_menu::settings_menu_menu(&mut kitty));
 
-        egui::CentralPanel::default().show(ctx, canvas(ctx, &mut state, &frame_data));
+        egui::CentralPanel::default().show(ctx, canvas(ctx, &mut kitty, &frame_state));
 
     })
 }

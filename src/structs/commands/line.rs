@@ -1,8 +1,6 @@
 use eframe::egui::{Pos2, Shape, Stroke};
 
-use crate::structs::{commands::CommandResult, NextInput};
-
-
+use crate::structs::{commands::CommandResult, NextCommandInput};
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum LineState {
@@ -10,7 +8,7 @@ pub enum LineState {
     StartPoint(Pos2),
 }
 
-impl NextInput<(LineOptions,Stroke)> for LineState {
+impl NextCommandInput<(LineOptions,Stroke)> for LineState {
     fn next_input(&mut self, (options,stroke): (LineOptions,Stroke), pos_in: Pos2) -> CommandResult{
         match self {
             Self::Nothing => {
@@ -33,4 +31,10 @@ impl NextInput<(LineOptions,Stroke)> for LineState {
 pub enum LineOptions {
     Separate,
     Connected,
+}
+
+impl Default for LineOptions {
+    fn default() -> Self {
+        Self::Separate
+    }
 }

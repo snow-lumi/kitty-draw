@@ -49,3 +49,9 @@ pub enum CommandResult {
     Nothing,
     Shape(egui::Shape),
 }
+
+#[derive(Default)]
+pub struct CommandOptions {
+    pub line: line::LineOptions
+}
+
