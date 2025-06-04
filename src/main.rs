@@ -9,7 +9,7 @@ mod canvas;
 
 use crate::canvas::canvas;
 use crate::structs::frame_data::FrameData;
-use crate::structs::program_state::ProgramState;
+use crate::structs::kitty::Kitty;
 
 fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
@@ -20,7 +20,7 @@ fn main() -> eframe::Result {
     };
 
     // application state:
-    let mut state = ProgramState::new();
+    let mut state = Kitty::new();
 
 
     eframe::run_simple_native("kitty draw", options, move |ctx, _frame| {

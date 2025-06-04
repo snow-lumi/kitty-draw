@@ -1,9 +1,9 @@
 use eframe::egui::{self, Ui};
 
 use crate::buttons;
-use crate::structs::program_state::ProgramState;
+use crate::structs::kitty::Kitty;
 
-fn bottom_menu_fn(ui: &mut Ui, state: &mut ProgramState ) {
+fn bottom_menu_fn(ui: &mut Ui, state: &mut Kitty ) {
     ui.horizontal(|ui| {
         // pointer coordinates
         ui.label("x: ");
@@ -19,6 +19,6 @@ fn bottom_menu_fn(ui: &mut Ui, state: &mut ProgramState ) {
     });
 }
 
-pub fn bottom_menu(state: &mut ProgramState ) -> impl FnMut(&mut Ui) {
+pub fn bottom_menu(state: &mut Kitty ) -> impl FnMut(&mut Ui) {
     |ui| {bottom_menu_fn(ui, state);}
 }

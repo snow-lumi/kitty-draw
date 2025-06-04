@@ -1,9 +1,10 @@
 use eframe::egui::{self, Ui};
 
 use crate::buttons;
-use crate::structs::{CommandState, LineOptions, program_state::ProgramState};
+use crate::structs::kitty::Kitty;
+use crate::structs::commands::{CommandState, line::LineOptions};
 
-fn settings_menu_fn(ui: &mut Ui, state: &mut ProgramState ) {
+fn settings_menu_fn(ui: &mut Ui, state: &mut Kitty ) {
     match state.command {
         CommandState::Line(_) => {
             let button = ui.button("Connected");
@@ -29,9 +30,8 @@ fn settings_menu_fn(ui: &mut Ui, state: &mut ProgramState ) {
     buttons::func_button(ui, "Home".to_owned(), || {
         state.canvas_to_screen.translation = (0.0,0.0).into();
     });
-    ui.label(format!("mrrrp {:?}",state.command));
 }
 
-pub fn settings_menu_menu(state: &mut ProgramState ) -> impl FnMut(&mut Ui) {
+pub fn settings_menu_menu(state: &mut Kitty ) -> impl FnMut(&mut Ui) {
     |ui| {settings_menu_fn(ui, state);}
 }

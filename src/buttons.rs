@@ -1,9 +1,10 @@
 use eframe::egui::Ui;
 
 use crate::math::BoolToggleExt;
-use crate::structs::{CommandState, Commands, program_state::ProgramState};
+use crate::structs::kitty::Kitty;
+use crate::structs::commands::{CommandState, Commands};
 
-pub fn command_button(ui: &mut Ui, mrrp: Commands, state: &mut ProgramState) {
+pub fn command_button(ui: &mut Ui, mrrp: Commands, state: &mut Kitty) {
     let button1 = ui.button(format!("{:?}",mrrp));
     if button1.clicked() {
         state.command = if state.command.into_command() == mrrp {

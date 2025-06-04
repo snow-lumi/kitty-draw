@@ -4,11 +4,9 @@ use eframe::emath::TSTransform;
 
 use crate::structs::CommandResult;
 use crate::structs::NextInput;
-use crate::structs::{CommandState, LineOptions};
+use crate::structs::commands::{CommandState, line::LineOptions};
 
-
-
-pub struct ProgramState {
+pub struct Kitty {
     pub command: CommandState,
     pub line_options: LineOptions,
     pub show_origin: bool,
@@ -21,7 +19,7 @@ pub struct ProgramState {
     pub canvas_contents: Vec<egui::Shape>,
 }
 
-impl ProgramState {
+impl Kitty {
     pub fn new() -> Self {
         Self {
             command: CommandState::Noop,
@@ -38,7 +36,7 @@ impl ProgramState {
     }
 }
 
-impl NextInput<()> for ProgramState {
+impl NextInput<()> for Kitty {
     fn next_input(&mut self, _: (), pos: Pos2) -> CommandResult {
         match &mut self.command {
             CommandState::Noop => CommandResult::Nothing,

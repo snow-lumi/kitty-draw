@@ -2,9 +2,12 @@ use eframe::egui::{self, Context, Pos2, Ui};
 
 use crate::math::StrokelessTransformExt;
 use crate::shapes;
-use crate::structs::{CommandResult, CommandState, frame_data::FrameData, NextInput, program_state::ProgramState};
+use crate::structs::kitty::Kitty;
+use crate::structs::frame_data::FrameData;
+use crate::structs::NextInput;
+use crate::structs::commands::{CommandResult, CommandState};
 
-fn canvas_fn(ctx: &Context, ui: &mut Ui, state: &mut ProgramState, frame_data: &FrameData ) {
+fn canvas_fn(ctx: &Context, ui: &mut Ui, state: &mut Kitty, frame_data: &FrameData ) {
     // make canvas
     let available_space = ui.available_size();
     let (response, painter) = ui.allocate_painter(available_space, egui::Sense::hover());
@@ -108,6 +111,6 @@ fn canvas_fn(ctx: &Context, ui: &mut Ui, state: &mut ProgramState, frame_data: &
     }
 }
 
-pub fn canvas(ctx: &Context, state: &mut ProgramState, frame_data: &FrameData) -> impl FnMut(&mut Ui) {
+pub fn canvas(ctx: &Context, state: &mut Kitty, frame_data: &FrameData) -> impl FnMut(&mut Ui) {
     |ui| {canvas_fn(ctx, ui, state, frame_data);}
 }
