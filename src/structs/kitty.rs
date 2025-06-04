@@ -92,7 +92,7 @@ impl Kitty {
     pub fn do_kitty_commands(&mut self, screen_rect: Rect) {
         for cmd in self.kitty_command_stack.clone() {
             match cmd {
-                KittyCommands::CanvasHome => self.initialize_canvas(screen_rect)
+                KittyCommands::CanvasHome => self.initialize_canvas(screen_rect),
             }
         }
         self.kitty_command_stack = vec![];

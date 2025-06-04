@@ -1,6 +1,10 @@
 use eframe::egui::{self, Pos2, Shape, Vec2};
 use eframe::emath::TSTransform;
 
+pub mod shapes;
+pub mod collide;
+pub mod pga;
+
 pub trait BoolToggleExt {
     fn toggle(&mut self);
 }
@@ -78,7 +82,6 @@ impl StrokelessTransformExt for Pos2 {
     }
 }
 
-
 pub trait FlipYExt {
     fn flip_y(self) -> Self;
 }
@@ -118,5 +121,33 @@ impl FlipYExt for Shape {
             _ => (), // TODO
         }
         result
+    }
+}
+
+impl From<Pos2> for pga::KittyPointNormalPGA {
+    fn from(value: Pos2) -> Self {
+        Self {
+            e_0y: value.x,
+            e_0x: value.y,
+        }
+    }
+}
+
+impl From<Pos2> for pga::KittyPointPGA {
+    fn from(value: Pos2) -> Self {
+        Self {
+            e_xy: 1.0,
+            e_0y: value.x,
+            e_0x: value.y,
+        }
+    }
+}
+
+impl From<pga::KittyPointNormalPGA> for Pos2 {
+    fn from(value: pga::KittyPointNormalPGA) -> Self {
+        Self {
+            x: value.e_0y,
+            y: value.e_0x,
+        }
     }
 }
