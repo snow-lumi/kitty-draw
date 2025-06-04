@@ -7,9 +7,9 @@ pub mod kitty;
 pub mod commands;
 
 pub trait NextCommandInput<O> {
-    fn next_input(&mut self,options: O, pos: Pos2) -> CommandResult;
+    fn next_input(&mut self, options: O, pos: Pos2) -> CommandResult;
 }
 
-pub trait Preview {
-    fn preview(&self, pos: Pos2) -> Option<Shape>;
+pub trait Preview<O> {
+    fn preview(&self, options: O, pos: Pos2) -> Shape;
 }

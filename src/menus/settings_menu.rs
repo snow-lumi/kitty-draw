@@ -1,6 +1,7 @@
 use eframe::egui::{self, Ui};
 
 use crate::buttons;
+use crate::structs::commands::KittyCommands;
 use crate::structs::kitty::Kitty;
 use crate::structs::commands::{CommandState, line::LineOptions};
 
@@ -18,7 +19,7 @@ fn settings_menu_fn(ui: &mut Ui, kitty: &mut Kitty ) {
     ui.separator();
     ui.add(egui::Slider::new(&mut kitty.canvas_to_screen.scaling, 0.1..=10.0).text("zoom"));
     buttons::func_button(ui, "Home".to_owned(), || {
-        kitty.canvas_to_screen.translation = (0.0,0.0).into();
+        kitty.kitty_command_stack.push(KittyCommands::CanvasHome);
     });
 }
 

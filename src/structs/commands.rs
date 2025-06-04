@@ -55,3 +55,7 @@ pub struct CommandOptions {
     pub line: line::LineOptions
 }
 
+#[derive(PartialEq, Clone, Copy, Debug)]
+pub enum KittyCommands {
+    CanvasHome
+}

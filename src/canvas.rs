@@ -4,6 +4,7 @@ use crate::math::StrokelessTransformExt;
 use crate::shapes;
 use crate::structs::kitty::Kitty;
 use crate::structs::frame_state::FrameState;
+use crate::structs::Preview;
 
 fn canvas_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &FrameState ) {
     // make canvas painter
@@ -15,6 +16,8 @@ fn canvas_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &FrameS
     if !kitty.canvas_initialized {
         kitty.initialize_canvas(screen_rect);
     }
+
+    kitty.do_kitty_commands(screen_rect);
 
     // draw origin
     painter.add(shapes::simple_crosshair(screen_rect, kitty.canvas_origin(), egui::Stroke::new(1.0, egui::Color32::from_gray(100))));
@@ -50,7 +53,7 @@ fn canvas_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &FrameS
             let stroke_cursor = egui::Stroke::new(1.0, egui::Color32::from_rgb(18, 100, 210));
             painter.add(shapes::x_shape(des_pointer, 5.0, stroke_cursor));
 
-            //painter.add(preview_current);
+            painter.add(kitty.preview((), pos));
         }
     }
 }

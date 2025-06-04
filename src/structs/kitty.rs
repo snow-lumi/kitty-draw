@@ -1,11 +1,11 @@
-use eframe::egui;
+use eframe::egui::{self, Shape};
 use eframe::egui::{Key, Pos2, Rect};
 use eframe::emath::TSTransform;
 
 use crate::math::StrokelessTransformExt;
 use crate::structs::frame_state::FrameState;
 use crate::structs::{NextCommandInput, Preview};
-use crate::structs::commands::{CommandState, CommandOptions, CommandResult};
+use crate::structs::commands::{CommandOptions, CommandResult, CommandState, Commands, KittyCommands};
 
 pub struct Kitty {
     pub command: CommandState,
@@ -18,6 +18,7 @@ pub struct Kitty {
     pub canvas_to_screen: TSTransform,
     pub canvas_initialized: bool,
     pub canvas_contents: Vec<egui::Shape>,
+    pub kitty_command_stack: Vec<KittyCommands>,
 }
 
 impl Kitty {
@@ -33,11 +34,13 @@ impl Kitty {
             canvas_to_screen: TSTransform::IDENTITY,
             canvas_initialized: false,
             canvas_contents: vec![],
+            kitty_command_stack: vec![],
         }
     }
 
     pub fn initialize_canvas(&mut self, screen_rect: Rect) {
         self.canvas_to_screen.translation = screen_rect.center().to_vec2();
+        self.canvas_to_screen.scaling = 1.0;
         self.canvas_initialized = true;
     }
 
@@ -62,8 +65,8 @@ impl Kitty {
 
             if let Some(egui::Event::MouseWheel { unit: _, delta, modifiers }) = scroll_event {
                 let factor = match *modifiers {
-                    egui::Modifiers::NONE => (1.055_f32).powf(delta.y),
-                    egui::Modifiers::ALT => (1.022_f32).powf(delta.y),
+                    egui::Modifiers::NONE => (1.1_f32).powf(delta.y),
+                    egui::Modifiers::ALT => (1.03_f32).powf(delta.y),
                     _ => 1.0,
                 };
                 self.canvas_to_screen.scaling *= factor;
@@ -85,6 +88,15 @@ impl Kitty {
                 }
             }
     }
+
+    pub fn do_kitty_commands(&mut self, screen_rect: Rect) {
+        for cmd in self.kitty_command_stack.clone() {
+            match cmd {
+                KittyCommands::CanvasHome => self.initialize_canvas(screen_rect)
+            }
+        }
+        self.kitty_command_stack = vec![];
+    }
 }
 
 impl NextCommandInput<()> for Kitty {
@@ -98,8 +110,11 @@ impl NextCommandInput<()> for Kitty {
     }
 }
 
-impl Preview for Kitty{
-    fn preview(&self, pos: Pos2) -> Option<egui::Shape> {
-        None
+impl Preview<()> for Kitty{
+    fn preview(&self, _: (), pos: Pos2) -> Shape {
+        match self.command {
+            CommandState::Line(state) => state.preview(self, pos),
+            _ => Shape::Noop,
+        }
     }
 }
