@@ -1,6 +1,6 @@
 use eframe::egui;
 
-mod shapes;
+mod canvas_shapes;
 mod buttons;
 mod math;
 mod structs;

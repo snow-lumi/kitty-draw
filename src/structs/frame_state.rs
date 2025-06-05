@@ -5,6 +5,7 @@ use eframe::egui::{self, Key, Pos2, Rect};
 pub struct FrameState {
     pub events: Vec<egui::Event>,
     pub raw_pointer: egui::PointerState,
+    #[expect(dead_code)]
     pub keys_down: HashSet<Key>,
     pub keys_pressed: HashSet<Key>,
 }

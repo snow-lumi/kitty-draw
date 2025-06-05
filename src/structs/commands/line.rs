@@ -1,6 +1,8 @@
 use eframe::egui::{Pos2, Shape, Stroke};
 
-use crate::{math::StrokelessTransformExt, structs::{commands::CommandResult, kitty::Kitty, NextCommandInput, Preview}};
+use crate::structs::commands::CommandResult;
+use crate::structs::kitty::Kitty;
+use crate::structs::{NextCommandInput, Preview};
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum LineState {
@@ -34,7 +36,7 @@ impl Preview<&Kitty> for LineState {
             Self::StartPoint(pos_1) => {
                 Shape::LineSegment {
                     points: [
-                        pos_1.transform_kitty_flip(kitty.canvas_to_screen),
+                        kitty.canvas_to_screen.transform_pos(pos_1),
                         pos
                     ],
                     stroke: kitty.stroke,

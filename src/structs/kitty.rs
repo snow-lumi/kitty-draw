@@ -1,11 +1,12 @@
-use eframe::egui::{self, Shape};
+use eframe::egui::{self, Shape, Vec2};
 use eframe::egui::{Key, Pos2, Rect};
-use eframe::emath::TSTransform;
+use eframe::emath::{RectTransform, TSTransform};
 
-use crate::math::StrokelessTransformExt;
+use crate::math::collide::KittyCollide;
+use crate::math::kitty_shapes::{KittyDisc, KittyShape};
 use crate::structs::frame_state::FrameState;
 use crate::structs::{NextCommandInput, Preview};
-use crate::structs::commands::{CommandOptions, CommandResult, CommandState, Commands, KittyCommands};
+use crate::structs::commands::{CommandOptions, CommandResult, CommandState, KittyCommands};
 
 pub struct Kitty {
     pub command: CommandState,
@@ -15,7 +16,7 @@ pub struct Kitty {
     pub stroke: egui::Stroke,
     pub x_string: String,
     pub y_string: String,
-    pub canvas_to_screen: TSTransform,
+    pub canvas_to_screen: RectTransform,
     pub canvas_initialized: bool,
     pub canvas_contents: Vec<egui::Shape>,
     pub kitty_command_stack: Vec<KittyCommands>,
@@ -31,7 +32,16 @@ impl Kitty {
             stroke: egui::Stroke::new(1.0, egui::Color32::WHITE),
             x_string: String::default(),
             y_string: String::default(),
-            canvas_to_screen: TSTransform::IDENTITY,
+            canvas_to_screen: RectTransform::from_to(
+                Rect {
+                    min: (0.0,0.0).into(),
+                    max: (1.0,1.0).into(), 
+                },
+                Rect {
+                    min: (0.0,0.0).into(),
+                    max: (1.0,-1.0).into(),
+                },
+            ),
             canvas_initialized: false,
             canvas_contents: vec![],
             kitty_command_stack: vec![],
@@ -39,13 +49,46 @@ impl Kitty {
     }
 
     pub fn initialize_canvas(&mut self, screen_rect: Rect) {
-        self.canvas_to_screen.translation = screen_rect.center().to_vec2();
-        self.canvas_to_screen.scaling = 1.0;
-        self.canvas_initialized = true;
+        let center = screen_rect.center();
+        let canvas_rect = screen_rect.translate(center.to_vec2() * -1.0);
+        let screen_flipped = Rect {
+            min: Pos2 {
+                x: screen_rect.min.x,
+                y: screen_rect.max.y,
+            },
+            max: Pos2 {
+                x: screen_rect.max.x,
+                y: screen_rect.min.y,
+            },
+        };
+        self.canvas_to_screen = RectTransform::from_to(
+            canvas_rect,
+            screen_flipped,
+        );
     }
 
     pub fn canvas_origin(&self) -> Pos2 {
-        Pos2::ZERO.transform_kitty_flip(self.canvas_to_screen)
+        self.canvas_to_screen.transform_pos(Pos2::ZERO)
+    }
+
+    pub fn screen_to_canvas(&self) -> RectTransform {
+        self.canvas_to_screen.inverse()
+    }
+
+    pub fn canvas_zoom(&mut self, amount: f32, center: Pos2) {
+        let center_in_canvas = self.screen_to_canvas().transform_pos(center);
+        let scale_trans = TSTransform::from_translation(center_in_canvas.to_vec2()*-1.0) * TSTransform::from_scaling(amount) * TSTransform::from_translation(center_in_canvas.to_vec2());
+        self.canvas_to_screen = RectTransform::from_to(
+            scale_trans.mul_rect(*self.canvas_to_screen.from()),
+            *self.canvas_to_screen.to(),
+        );
+    }
+
+    pub fn canvas_drag(&mut self, amount: Vec2) {
+        self.canvas_to_screen = RectTransform::from_to(
+            TSTransform::from_translation(amount).mul_rect(*self.canvas_to_screen.from()),
+            *self.canvas_to_screen.to(),
+        );
     }
 
     pub fn handle_keyboard_input(&mut self, state: &FrameState) {
@@ -64,27 +107,39 @@ impl Kitty {
                 });
 
             if let Some(egui::Event::MouseWheel { unit: _, delta, modifiers }) = scroll_event {
-                let factor = match *modifiers {
+                let amount = match *modifiers {
                     egui::Modifiers::NONE => (1.1_f32).powf(delta.y),
                     egui::Modifiers::ALT => (1.03_f32).powf(delta.y),
                     _ => 1.0,
                 };
-                self.canvas_to_screen.scaling *= factor;
-                self.canvas_to_screen.translation += (self.canvas_to_screen.translation - pos.to_vec2())*(factor-1.0);
+                self.canvas_zoom(amount, pos);
             }
             
             // middle drag
             if state.raw_pointer.middle_down() {
-                self.canvas_to_screen.translation += state.raw_pointer.delta();
+                self.canvas_drag(state.raw_pointer.delta());
             }
 
-            // mouse input
+            // left click
             if state.raw_pointer.primary_clicked() {
                 match self.next_input((), pos) {
                     CommandResult::Nothing => (),
                     CommandResult::Shape(shape) => {
                         self.canvas_contents.push(shape);
                     }
+                }
+
+                println!("pos: {:?}", self.canvas_to_screen.inverse().transform_pos(pos));
+
+                if self.command == CommandState::Noop {
+                    let bleh = self.canvas_contents.clone();
+                    let woof = self.canvas_to_screen.inverse().transform_pos(pos);
+                    let bork = KittyDisc::new(woof, 10.0);
+                    let meow: Vec<_> = bleh.iter().filter(|shape| -> bool {
+                        let shape_k: KittyShape = KittyShape::from(shape.clone().clone());
+                        shape_k.collides(bork.clone())
+                    }).collect();
+                    println!("{:?}",meow)
                 }
             }
     }
@@ -101,7 +156,7 @@ impl Kitty {
 
 impl NextCommandInput<()> for Kitty {
     fn next_input(&mut self, _: (), pos: Pos2) -> CommandResult {
-        let pos_canvas = pos.transform_kitty_flip(self.canvas_to_screen.inverse());
+        let pos_canvas = self.screen_to_canvas().transform_pos(pos);
         match &mut self.command {
             CommandState::Noop => CommandResult::Nothing,
             CommandState::Line(state) => state.next_input((self.command_options.line, self.stroke), pos_canvas),

@@ -49,6 +49,7 @@ pub fn func_button<F: FnOnce()>(ui: &mut Ui, name: String, func: F) {
     }
 }
 
+#[expect(dead_code)]
 pub fn func_button_highlight<F: FnOnce()>(ui: &mut Ui, name: String, func: F, highlight: bool) {
     let button = ui.button(name);
     if button.clicked() {

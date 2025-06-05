@@ -1,10 +1,36 @@
 use eframe::egui::Pos2;
 
-use crate::math::shapes::{KittyCircle, KittyDisc, KittyLineSegment};
-use crate::math::pga::{KittyDotPGA, KittyPointPGA, KittyRegressivePGA, KittyWedgePGA};
+use crate::math::pga::dot_prod::KittyDotPGA;
+use crate::math::pga::regressive_prod::KittyRegressivePGA;
+use crate::math::pga::wedge_prod::KittyWedgePGA;
+use crate::math::kitty_shapes::*;
+use crate::math::pga::KittyPointPGA;
 
 pub trait KittyCollide<B> {
     fn collides(&self, other: B) -> bool;
+}
+
+impl KittyCollide<KittyLineSegment> for KittyShape {
+    fn collides(&self, other: KittyLineSegment) -> bool {
+        match self {
+            // KittyShape::LineSegment(..) => todo!(),
+            KittyShape::Disc(disc) => disc.collides(other),
+            KittyShape::Circle(circle) => circle.collides(other),
+            _ => false,
+        }
+    }
+}
+
+impl KittyCollide<KittyDisc> for KittyShape {
+    fn collides(&self, other: KittyDisc) -> bool {
+        match self {
+            KittyShape::Point(point) => other.collides(*point),
+            KittyShape::LineSegment(line) => other.collides(line.clone()),
+            KittyShape::Disc(_disc) => todo!(),
+            KittyShape::Circle(_circle) => todo!(),
+            _ => false,
+        }
+    }
 }
 
 impl KittyCollide<Pos2> for KittyDisc {
@@ -24,10 +50,22 @@ impl KittyCollide<KittyLineSegment> for KittyDisc {
         let start: KittyPointPGA = other.start.into();
         let end: KittyPointPGA = other.end.into();
         let center: KittyPointPGA = self.center.into();
+        //println!("center: {:?}", center);
+        println!("{:?}", center);
+        println!("dot");
         let line = start.regressive_prod(end);
-        let perpendicular = center.dot_prod(line);
+        //println!("line: {:?}", line.resize());
+        println!("{:?}", line.resize());
+        println!("equals");
+        let perpendicular = line.dot_prod(center);
+        //println!("test: {:?}", center.regressive_prod(Pos2::ZERO.into()).resize());
+        println!("{:?}", perpendicular);
+        println!("{:?}", line.dot_prod(center));
+        //println!("perpendicular: {:?}", perpendicular.resize());
         let projection = line.wedge_prod(perpendicular);
+        //println!("projection: {:?}", projection);
         let projection: Pos2 = projection.normalize().into();
+        //println!("projection: {:?}", projection);
         self.center.distance(projection) <= self.radius
     }
 }
@@ -38,6 +76,11 @@ impl KittyCollide<KittyLineSegment> for KittyCircle {
             && (self.center.distance(other.end) <= self.radius)
         {
             return false;
+        }
+        if (self.center.distance(other.start) <= self.radius)
+            ^ (self.center.distance(other.end) <= self.radius)
+        {
+            return true;
         }
         let start: KittyPointPGA = other.start.into();
         let end: KittyPointPGA = other.end.into();

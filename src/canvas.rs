@@ -1,7 +1,7 @@
 use eframe::egui::{self, Context, Pos2, Ui};
 
 use crate::math::StrokelessTransformExt;
-use crate::shapes;
+use crate::canvas_shapes;
 use crate::structs::kitty::Kitty;
 use crate::structs::frame_state::FrameState;
 use crate::structs::Preview;
@@ -20,7 +20,7 @@ fn canvas_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &FrameS
     kitty.do_kitty_commands(screen_rect);
 
     // draw origin
-    painter.add(shapes::simple_crosshair(screen_rect, kitty.canvas_origin(), egui::Stroke::new(1.0, egui::Color32::from_gray(100))));
+    painter.add(canvas_shapes::simple_crosshair(screen_rect, kitty.canvas_origin(), egui::Stroke::new(1.0, egui::Color32::from_gray(100))));
 
     // draw the image
     painter.extend(kitty.canvas_contents.clone().iter().map(|shape| -> egui::Shape {
@@ -37,7 +37,7 @@ fn canvas_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &FrameS
             // calculate where the user wants the position of the pointer
             let pointer_offset: egui::Vec2 = (kitty.x_string.parse().unwrap_or(0.0),- kitty.y_string.parse().unwrap_or(0.0)).into();
             let des_pointer = match kitty.pointer_absolute {
-                true  => Pos2::ZERO.transform_kitty_flip(kitty.canvas_to_screen.inverse())+pointer_offset,
+                true  => kitty.canvas_to_screen.inverse().transform_pos(Pos2::ZERO)+pointer_offset,
                 false => pos+pointer_offset,
             };
 
@@ -47,11 +47,11 @@ fn canvas_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &FrameS
             });
 
             // draw mouse crosshair
-            painter.add(shapes::cursor_crosshair(screen_rect, pos, !kitty.pointer_absolute));
+            painter.add(canvas_shapes::cursor_crosshair(screen_rect, pos, !kitty.pointer_absolute));
 
             // draw the position of the thingy ([mouse + offset] or absolute position)
             let stroke_cursor = egui::Stroke::new(1.0, egui::Color32::from_rgb(18, 100, 210));
-            painter.add(shapes::x_shape(des_pointer, 5.0, stroke_cursor));
+            painter.add(canvas_shapes::x_shape(des_pointer, 5.0, stroke_cursor));
 
             painter.add(kitty.preview((), pos));
         }

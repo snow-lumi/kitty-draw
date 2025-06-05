@@ -7,6 +7,7 @@ fn command_menu_fn(ui: &mut Ui, kitty: &mut Kitty ) {
     ui.horizontal( |ui| {
         buttons::command_button(ui, Commands::Line, kitty);
         buttons::command_button(ui, Commands::Circle, kitty);
+        ui.separator()
     });
 }
 
