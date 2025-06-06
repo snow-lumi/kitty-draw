@@ -3,6 +3,7 @@ use eframe::egui::{Key, Pos2, Rect};
 use eframe::emath::{RectTransform, TSTransform};
 
 use crate::math::collide::KittyCollide;
+use crate::math::distance::KittyDistance;
 use crate::math::kitty_shapes::{KittyDisc, KittyShape};
 use crate::structs::frame_state::FrameState;
 use crate::structs::{NextCommandInput, Preview};
@@ -65,6 +66,7 @@ impl Kitty {
             canvas_rect,
             screen_flipped,
         );
+        self.canvas_initialized = true;
     }
 
     pub fn canvas_origin(&self) -> Pos2 {
@@ -75,9 +77,17 @@ impl Kitty {
         self.canvas_to_screen.inverse()
     }
 
+    pub fn vec2_stc(&self, vec: Vec2) -> Vec2 {
+        let scale = self.screen_to_canvas().scale();
+        Vec2 {
+            x: vec.x * scale.x,
+            y: vec.y * scale.y,
+        }
+    }
+
     pub fn canvas_zoom(&mut self, amount: f32, center: Pos2) {
         let center_in_canvas = self.screen_to_canvas().transform_pos(center);
-        let scale_trans = TSTransform::from_translation(center_in_canvas.to_vec2()*-1.0) * TSTransform::from_scaling(amount) * TSTransform::from_translation(center_in_canvas.to_vec2());
+        let scale_trans = TSTransform::from_translation(center_in_canvas.to_vec2()) * TSTransform::from_scaling(amount) * TSTransform::from_translation(center_in_canvas.to_vec2()*-1.0);
         self.canvas_to_screen = RectTransform::from_to(
             scale_trans.mul_rect(*self.canvas_to_screen.from()),
             *self.canvas_to_screen.to(),
@@ -86,7 +96,7 @@ impl Kitty {
 
     pub fn canvas_drag(&mut self, amount: Vec2) {
         self.canvas_to_screen = RectTransform::from_to(
-            TSTransform::from_translation(amount).mul_rect(*self.canvas_to_screen.from()),
+            TSTransform::from_translation(- self.vec2_stc(amount)).mul_rect(*self.canvas_to_screen.from()),
             *self.canvas_to_screen.to(),
         );
     }
@@ -97,7 +107,7 @@ impl Kitty {
         }
     }
 
-    pub fn handle_mouse_input_canvas(&mut self, state: &FrameState, pos: Pos2) {
+    pub fn handle_mouse_input_canvas(&mut self, state: &FrameState, pos: Pos2, des_pointer: Pos2) {
 
             // scroll zoom
             let scroll_event = state.events
@@ -108,8 +118,8 @@ impl Kitty {
 
             if let Some(egui::Event::MouseWheel { unit: _, delta, modifiers }) = scroll_event {
                 let amount = match *modifiers {
-                    egui::Modifiers::NONE => (1.1_f32).powf(delta.y),
-                    egui::Modifiers::ALT => (1.03_f32).powf(delta.y),
+                    egui::Modifiers::NONE => (1.1_f32).powf(-delta.y),
+                    egui::Modifiers::ALT => (1.03_f32).powf(-delta.y),
                     _ => 1.0,
                 };
                 self.canvas_zoom(amount, pos);
@@ -122,7 +132,7 @@ impl Kitty {
 
             // left click
             if state.raw_pointer.primary_clicked() {
-                match self.next_input((), pos) {
+                match self.next_input((), des_pointer) {
                     CommandResult::Nothing => (),
                     CommandResult::Shape(shape) => {
                         self.canvas_contents.push(shape);
@@ -135,10 +145,17 @@ impl Kitty {
                     let bleh = self.canvas_contents.clone();
                     let woof = self.canvas_to_screen.inverse().transform_pos(pos);
                     let bork = KittyDisc::new(woof, 10.0);
-                    let meow: Vec<_> = bleh.iter().filter(|shape| -> bool {
-                        let shape_k: KittyShape = KittyShape::from(shape.clone().clone());
-                        shape_k.collides(bork.clone())
-                    }).collect();
+                    let meow: Vec<_> = bleh
+                        .iter()
+                        .filter(|shape| -> bool {
+                            let shape_k: KittyShape = KittyShape::from((*shape).clone());
+                            shape_k.collides(bork.clone())
+                        })
+                        .map(|shape| -> f32 {
+                            let shape_k: KittyShape = KittyShape::from((*shape).clone());
+                            shape_k.distance_kitty(woof)
+                        })
+                        .collect();
                     println!("{:?}",meow)
                 }
             }
@@ -156,16 +173,15 @@ impl Kitty {
 
 impl NextCommandInput<()> for Kitty {
     fn next_input(&mut self, _: (), pos: Pos2) -> CommandResult {
-        let pos_canvas = self.screen_to_canvas().transform_pos(pos);
         match &mut self.command {
             CommandState::Noop => CommandResult::Nothing,
-            CommandState::Line(state) => state.next_input((self.command_options.line, self.stroke), pos_canvas),
+            CommandState::Line(state) => state.next_input((self.command_options.line, self.stroke), pos),
             CommandState::Circle(_state) => CommandResult::Nothing,
         }
     }
 }
 
-impl Preview<()> for Kitty{
+impl Preview<()> for Kitty {
     fn preview(&self, _: (), pos: Pos2) -> Shape {
         match self.command {
             CommandState::Line(state) => state.preview(self, pos),

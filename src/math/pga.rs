@@ -1,5 +1,7 @@
 pub mod dual;
-pub mod prod;
+pub mod add;
+pub mod sub;
+pub mod mul;
 pub mod dot_prod;
 pub mod wedge_prod;
 pub mod regressive_prod;
@@ -28,7 +30,7 @@ pub struct KittyLinePGA {
 
 impl KittyLinePGA {
     pub fn resize(&self) -> Self {
-        let factor: f32 = 1.0 / (self.e_x.abs().powi(2) + self.e_y.abs().powi(2)).sqrt();
+        let factor: f32 = 1.0 / (self.e_x.powi(2) + self.e_y.powi(2)).sqrt();
         *self * factor
     }
 }

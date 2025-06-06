@@ -3,6 +3,7 @@ use eframe::emath::{RectTransform};
 
 pub mod kitty_shapes;
 pub mod collide;
+pub mod distance;
 pub mod pga;
 
 pub trait BoolToggleExt {

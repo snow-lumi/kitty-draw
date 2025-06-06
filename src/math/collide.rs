@@ -50,23 +50,17 @@ impl KittyCollide<KittyLineSegment> for KittyDisc {
         let start: KittyPointPGA = other.start.into();
         let end: KittyPointPGA = other.end.into();
         let center: KittyPointPGA = self.center.into();
-        //println!("center: {:?}", center);
-        println!("{:?}", center);
-        println!("dot");
         let line = start.regressive_prod(end);
-        //println!("line: {:?}", line.resize());
-        println!("{:?}", line.resize());
-        println!("equals");
-        let perpendicular = line.dot_prod(center);
-        //println!("test: {:?}", center.regressive_prod(Pos2::ZERO.into()).resize());
-        println!("{:?}", perpendicular);
-        println!("{:?}", line.dot_prod(center));
-        //println!("perpendicular: {:?}", perpendicular.resize());
+        let perpendicular = center.dot_prod(line);
         let projection = line.wedge_prod(perpendicular);
-        //println!("projection: {:?}", projection);
         let projection: Pos2 = projection.normalize().into();
-        //println!("projection: {:?}", projection);
         self.center.distance(projection) <= self.radius
+    }
+}
+
+impl KittyCollide<KittyDisc> for KittyDisc {
+    fn collides(&self, other: KittyDisc) -> bool {
+        self.center.distance(other.center) <= (self.radius + other.radius)
     }
 }
 
