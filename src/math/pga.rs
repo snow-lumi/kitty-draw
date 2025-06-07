@@ -28,6 +28,7 @@ pub struct KittyLinePGA {
     pub e_y: f32,
 }
 
+#[expect(dead_code)]
 impl KittyLinePGA {
     pub fn resize(&self) -> Self {
         let factor: f32 = 1.0 / (self.e_x.powi(2) + self.e_y.powi(2)).sqrt();

@@ -1,11 +1,15 @@
 use eframe::egui;
 
+use crate::structs::commands::select_single::SelectSingleState;
+
 pub mod line;
 pub mod circle;
+pub mod select_single;
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum CommandState {
     Noop,
+    SelectSingle(select_single::SelectSingleState),
     Line(line::LineState),
     Circle(circle::CircleState),
 }
@@ -13,9 +17,10 @@ pub enum CommandState {
 impl From<CommandState> for Commands {
     fn from(value: CommandState) -> Self {
         match value {
-            CommandState::Noop       => Commands::Noop,
-            CommandState::Circle(..) => Commands::Circle,
-            CommandState::Line(..)   => Commands::Line,
+            CommandState::Noop             => Commands::Noop,
+            CommandState::SelectSingle(..) => Commands::SelectSingle,
+            CommandState::Circle(..)       => Commands::Circle,
+            CommandState::Line(..)         => Commands::Line,
         }
     }
 }
@@ -25,11 +30,24 @@ impl CommandState {
         let commands: Commands = (self).into();
         commands
     }
+
+    pub fn select_single(index: usize) -> Self {
+        Self::SelectSingle(SelectSingleState::Selection(index))
+    }
+
+    pub fn idling(&self) -> bool {
+        matches!(*self, Self::Noop | Self::SelectSingle(..))
+    }
+
+    pub fn selecting(&self) -> bool {
+        matches!(*self, Self::SelectSingle(..))
+    }
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum Commands {
     Noop,
+    SelectSingle,
     Line,
     Circle,
 }
@@ -37,9 +55,10 @@ pub enum Commands {
 impl Commands {
     pub fn starting_state(&self) -> CommandState {
         match self {
-            Commands::Noop   => CommandState::Noop,
-            Commands::Circle => CommandState::Circle(circle::CircleState::Begin),
-            Commands::Line   => CommandState::Line(line::LineState::Nothing),
+            Commands::Noop         => CommandState::Noop,
+            Commands::SelectSingle => CommandState::Noop,
+            Commands::Circle       => CommandState::Circle(circle::CircleState::Begin),
+            Commands::Line         => CommandState::Line(line::LineState::Nothing),
         }
     }
 }

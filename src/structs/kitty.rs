@@ -1,10 +1,11 @@
-use eframe::egui::{self, Shape, Vec2};
-use eframe::egui::{Key, Pos2, Rect};
+use eframe::egui::{self, Color32, Key, Pos2, Rect, Shape, Stroke, Vec2};
 use eframe::emath::{RectTransform, TSTransform};
 
 use crate::math::collide::KittyCollide;
 use crate::math::distance::KittyDistance;
 use crate::math::kitty_shapes::{KittyDisc, KittyShape};
+use crate::math::StrokelessTransformExt;
+use crate::structs::commands::select_single::SelectSingleState;
 use crate::structs::frame_state::FrameState;
 use crate::structs::{NextCommandInput, Preview};
 use crate::structs::commands::{CommandOptions, CommandResult, CommandState, KittyCommands};
@@ -14,12 +15,12 @@ pub struct Kitty {
     pub command_options: CommandOptions,
     pub show_origin: bool,
     pub pointer_absolute: bool,
-    pub stroke: egui::Stroke,
+    pub stroke: Stroke,
     pub x_string: String,
     pub y_string: String,
     pub canvas_to_screen: RectTransform,
     pub canvas_initialized: bool,
-    pub canvas_contents: Vec<egui::Shape>,
+    pub canvas_contents: Vec<Shape>,
     pub kitty_command_stack: Vec<KittyCommands>,
 }
 
@@ -107,6 +108,40 @@ impl Kitty {
         }
     }
 
+    pub fn click_select(&self, pos: Pos2) -> Option<usize> {
+        let shapes = self.canvas_contents.clone();
+        let pointer_in_canvas = self.screen_to_canvas().transform_pos(pos);
+        let pointer_disc = KittyDisc::new(pointer_in_canvas, self.screen_to_canvas().scale().x * 10.0);
+
+        shapes.iter()
+            .enumerate()
+            .filter(|&(_index,shape)| -> bool {
+                let shape_k: KittyShape = KittyShape::from((*shape).clone());
+                shape_k.collides(pointer_disc.clone())
+            })
+            .map(|(index,shape)| -> (usize,f32) {
+                let shape_k: KittyShape = KittyShape::from((*shape).clone());
+                (index,shape_k.distance_kitty(pointer_in_canvas))
+            })
+            .fold(None, |acc ,(index,dist)| -> Option<(usize,f32)> {
+                match acc {
+                    None => Some((index,dist)),
+                    Some((_,acc_d)) => {
+                        if dist < acc_d {
+                            Some((index,dist))
+                        } else {
+                            acc
+                        }
+                    },
+                }
+            })
+            .map(|(index,_)| -> usize {index})
+    }
+
+    pub fn pointer_offset(&self) -> Vec2 {
+        (self.x_string.parse().unwrap_or(0.0),self.y_string.parse().unwrap_or(0.0)).into()
+    }
+
     pub fn handle_mouse_input_canvas(&mut self, state: &FrameState, pos: Pos2, des_pointer: Pos2) {
 
             // scroll zoom
@@ -139,24 +174,15 @@ impl Kitty {
                     }
                 }
 
-                println!("pos: {:?}", self.canvas_to_screen.inverse().transform_pos(pos));
-
-                if self.command == CommandState::Noop {
-                    let bleh = self.canvas_contents.clone();
-                    let woof = self.canvas_to_screen.inverse().transform_pos(pos);
-                    let bork = KittyDisc::new(woof, 10.0);
-                    let meow: Vec<_> = bleh
-                        .iter()
-                        .filter(|shape| -> bool {
-                            let shape_k: KittyShape = KittyShape::from((*shape).clone());
-                            shape_k.collides(bork.clone())
-                        })
-                        .map(|shape| -> f32 {
-                            let shape_k: KittyShape = KittyShape::from((*shape).clone());
-                            shape_k.distance_kitty(woof)
-                        })
-                        .collect();
-                    println!("{:?}",meow)
+                if self.command.idling() {
+                    match self.click_select(pos) {
+                        None => {
+                            self.command = CommandState::Noop;
+                        },
+                        Some(index) => {
+                            self.command = CommandState::select_single(index);
+                        }
+                    }
                 }
             }
     }
@@ -169,12 +195,52 @@ impl Kitty {
         }
         self.kitty_command_stack = vec![];
     }
+
+    pub fn canvas_draw(&self) -> Vec<Shape> {
+        let mut result = self.canvas_contents.clone();
+        if let CommandState::SelectSingle(SelectSingleState::Selection(index)) = self.command {
+            let _ = result.remove(index);
+        }
+        result.iter().map(|shape| -> egui::Shape {
+            shape.clone().transform_kitty(self.canvas_to_screen)
+        }).collect()
+    }
+
+    pub fn shape_selected(shape: &Shape) -> Shape {
+        match *shape {
+            Shape::LineSegment { points, stroke } => {
+                Shape::LineSegment { points, stroke: Stroke { width: stroke.width, color: Color32::ORANGE } }
+            }
+            _ => shape.clone()
+        }
+    }
+
+    pub fn selection_draw(&self) -> Vec<Shape> {
+        let mut result = vec![];
+        #[expect(clippy::single_match)]
+        match self.command {
+            CommandState::SelectSingle(SelectSingleState::Selection(index)) => {
+                let selection = self.canvas_contents.get(index);
+                match selection {
+                    None => (),
+                    Some(shape) => {
+                        result.push(Self::shape_selected(shape));
+                    }
+                }
+            }
+            _ => ()
+        }
+        result.iter().map(|shape| -> egui::Shape {
+            shape.clone().transform_kitty(self.canvas_to_screen)
+        }).collect()
+    }
 }
 
 impl NextCommandInput<()> for Kitty {
     fn next_input(&mut self, _: (), pos: Pos2) -> CommandResult {
         match &mut self.command {
             CommandState::Noop => CommandResult::Nothing,
+            CommandState::SelectSingle(_state) => CommandResult::Nothing,
             CommandState::Line(state) => state.next_input((self.command_options.line, self.stroke), pos),
             CommandState::Circle(_state) => CommandResult::Nothing,
         }
