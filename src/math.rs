@@ -1,5 +1,6 @@
-use eframe::egui::{Pos2, Shape};
+use eframe::egui::{Pos2, Rect, Shape};
 use eframe::emath::{RectTransform};
+use eframe::epaint::{CircleShape, RectShape};
 
 pub mod kitty_shapes;
 pub mod collide;
@@ -17,12 +18,12 @@ impl BoolToggleExt for bool {
 }
 
 pub trait StrokelessTransformExt {
-    fn transform_kitty(self, transform: RectTransform) -> Self;
+    fn transform_kitty(&self, transform: RectTransform) -> Self;
 }
 
 impl StrokelessTransformExt for Shape {
-    fn transform_kitty(self, transform: RectTransform) -> Self {
-        let mut result = self;
+    fn transform_kitty(&self, transform: RectTransform) -> Self {
+        let mut result = self.clone();
         match &mut result {
             Shape::Noop => (),
             Shape::LineSegment { points,..} => {
@@ -30,11 +31,20 @@ impl StrokelessTransformExt for Shape {
                     transform.transform_pos(p)
                 });
             },
-            Shape::Circle(eframe::epaint::CircleShape { center: c, radius: r,  .. }) => {
-                *c = transform.transform_pos(*c);
-                *r *= transform.scale().x;
+            Shape::Circle(CircleShape { center, radius,  .. }) => {
+                *center = transform.transform_pos(*center);
+                *radius *= transform.scale().x;
             },
-            _ => (), // TODO
+            Shape::Rect(RectShape { rect, corner_radius, .. }) => {
+                *rect = transform.transform_rect(*rect);
+                *corner_radius *= transform.scale().x;
+            },
+            Shape::Vec(vec) => {
+                *vec = vec.iter().map(|shape| -> Shape {
+                    shape.transform_kitty(transform)
+                }).collect();
+            }
+            _ => todo!(), // TODO
         }
         result
     }
@@ -65,5 +75,12 @@ impl From<pga::KittyPointNormalPGA> for Pos2 {
             x: value.e_0y,
             y: value.e_0x,
         }
+    }
+}
+
+pub fn square_around_pos(pos: Pos2, size: f32) -> Rect {
+    Rect {
+        min: pos + (-size,-size).into(),
+        max: pos + (size,size).into(),
     }
 }

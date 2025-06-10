@@ -32,7 +32,7 @@ impl CommandState {
     }
 
     pub fn select_single(index: usize) -> Self {
-        Self::SelectSingle(SelectSingleState::Selection(index))
+        Self::SelectSingle(SelectSingleState::Selected(index))
     }
 
     pub fn idling(&self) -> bool {

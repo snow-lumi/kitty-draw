@@ -3,6 +3,7 @@ use eframe::egui;
 mod canvas_shapes;
 mod buttons;
 mod math;
+mod extensions;
 mod structs;
 mod menus;
 mod canvas;

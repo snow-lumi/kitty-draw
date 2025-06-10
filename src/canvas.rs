@@ -56,10 +56,9 @@ fn canvas_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &FrameS
         Some(pos) => {
 
             // calculate where the user wants the position of the pointer
-            let pointer_offset: egui::Vec2 = (kitty.x_string.parse().unwrap_or(0.0),- kitty.y_string.parse().unwrap_or(0.0)).into();
             let des_pointer = match kitty.pointer_absolute {
-                true  => kitty.canvas_to_screen.inverse().transform_pos(Pos2::ZERO)+pointer_offset,
-                false => pos+pointer_offset,
+                true  => kitty.screen_to_canvas().transform_pos(Pos2::ZERO)+kitty.pointer_offset(),
+                false => kitty.screen_to_canvas().transform_pos(pos)+kitty.pointer_offset(),
             };
 
             // draw mouse crosshair

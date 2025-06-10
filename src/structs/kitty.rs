@@ -1,4 +1,4 @@
-use eframe::egui::{self, Color32, Key, Pos2, Rect, Shape, Stroke, Vec2};
+use eframe::egui::{self, Key, Pos2, Rect, Shape, Stroke, Vec2};
 use eframe::emath::{RectTransform, TSTransform};
 
 use crate::math::collide::KittyCollide;
@@ -142,49 +142,61 @@ impl Kitty {
         (self.x_string.parse().unwrap_or(0.0),self.y_string.parse().unwrap_or(0.0)).into()
     }
 
-    pub fn handle_mouse_input_canvas(&mut self, state: &FrameState, pos: Pos2, des_pointer: Pos2) {
+    pub fn handle_mouse_input_canvas(&mut self, frame_state: &FrameState, pos: Pos2, des_pointer: Pos2) {
 
-            // scroll zoom
-            let scroll_event = state.events
-                .iter()
-                .find(|e| -> bool {
-                    matches!(e, egui::Event::MouseWheel {..})
-                });
+        // scroll zoom
+        let scroll_event = frame_state.events
+            .iter()
+            .find(|e| -> bool {
+                matches!(e, egui::Event::MouseWheel {..})
+            });
 
-            if let Some(egui::Event::MouseWheel { unit: _, delta, modifiers }) = scroll_event {
-                let amount = match *modifiers {
-                    egui::Modifiers::NONE => (1.1_f32).powf(-delta.y),
-                    egui::Modifiers::ALT => (1.03_f32).powf(-delta.y),
-                    _ => 1.0,
-                };
-                self.canvas_zoom(amount, pos);
-            }
-            
-            // middle drag
-            if state.raw_pointer.middle_down() {
-                self.canvas_drag(state.raw_pointer.delta());
-            }
+        if let Some(egui::Event::MouseWheel { unit: _, delta, modifiers }) = scroll_event {
+            let amount = match *modifiers {
+                egui::Modifiers::NONE => (1.1_f32).powf(-delta.y),
+                egui::Modifiers::ALT => (1.03_f32).powf(-delta.y),
+                _ => 1.0,
+            };
+            self.canvas_zoom(amount, pos);
+        }
+        
+        // middle drag
+        if frame_state.raw_pointer.middle_down() {
+            self.canvas_drag(frame_state.raw_pointer.delta());
+        }
 
-            // left click
-            if state.raw_pointer.primary_clicked() {
-                match self.next_input((), des_pointer) {
-                    CommandResult::Nothing => (),
-                    CommandResult::Shape(shape) => {
-                        self.canvas_contents.push(shape);
-                    }
-                }
-
-                if self.command.idling() {
-                    match self.click_select(pos) {
-                        None => {
-                            self.command = CommandState::Noop;
-                        },
-                        Some(index) => {
-                            self.command = CommandState::select_single(index);
-                        }
-                    }
+        // left click
+        if frame_state.raw_pointer.primary_clicked() {
+            match self.next_input((), des_pointer) {
+                CommandResult::Nothing => (),
+                CommandResult::Shape(shape) => {
+                    self.canvas_contents.push(shape);
                 }
             }
+
+            if self.command.idling() {
+                match self.click_select(pos) {
+                    None => {
+                        self.command = CommandState::Noop;
+                    },
+                    Some(index) => {
+                        self.command = CommandState::select_single(index);
+                    }
+                }
+            }
+        }
+
+
+        if let CommandState::SelectSingle(state) = &mut (self.command) {
+            if frame_state.raw_pointer.is_decidedly_dragging() && frame_state.raw_pointer.primary_down() {
+                if let Some(drag_start) = frame_state.raw_pointer.press_origin() {
+                    self.command = state.drag(self, drag_start, pos);
+                }
+            } else if let SelectSingleState::Dragging(index, _) = *state {
+                *state = SelectSingleState::Selected(index);
+            }
+        }
+
     }
 
     pub fn do_kitty_commands(&mut self, screen_rect: Rect) {
@@ -198,7 +210,7 @@ impl Kitty {
 
     pub fn canvas_draw(&self) -> Vec<Shape> {
         let mut result = self.canvas_contents.clone();
-        if let CommandState::SelectSingle(SelectSingleState::Selection(index)) = self.command {
+        if let CommandState::SelectSingle(SelectSingleState::Selected(index)) = self.command {
             let _ = result.remove(index);
         }
         result.iter().map(|shape| -> egui::Shape {
@@ -206,33 +218,13 @@ impl Kitty {
         }).collect()
     }
 
-    pub fn shape_selected(shape: &Shape) -> Shape {
-        match *shape {
-            Shape::LineSegment { points, stroke } => {
-                Shape::LineSegment { points, stroke: Stroke { width: stroke.width, color: Color32::ORANGE } }
-            }
-            _ => shape.clone()
-        }
-    }
-
     pub fn selection_draw(&self) -> Vec<Shape> {
-        let mut result = vec![];
-        #[expect(clippy::single_match)]
         match self.command {
-            CommandState::SelectSingle(SelectSingleState::Selection(index)) => {
-                let selection = self.canvas_contents.get(index);
-                match selection {
-                    None => (),
-                    Some(shape) => {
-                        result.push(Self::shape_selected(shape));
-                    }
-                }
-            }
-            _ => ()
+            CommandState::SelectSingle(select_state) => {
+                select_state.draw(self)
+            },
+            _ => vec![],
         }
-        result.iter().map(|shape| -> egui::Shape {
-            shape.clone().transform_kitty(self.canvas_to_screen)
-        }).collect()
     }
 }
 

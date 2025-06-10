@@ -1,4 +1,6 @@
-use eframe::egui::{Color32, Pos2, Rect, Shape, Stroke};
+use eframe::{egui::{Color32, Pos2, Rect, Shape, Stroke}, epaint::RectShape};
+
+use crate::math::square_around_pos;
 
 pub fn cursor_crosshair(rect: Rect, pos: Pos2, focus: bool) -> Shape {
     let c_defocus = Color32::from_gray(100);
@@ -27,6 +29,19 @@ pub fn x_shape(pos: Pos2, size: f32, stroke: Stroke) -> Shape {
         Shape::line_segment([bottom_right,top_left], stroke),
         Shape::line_segment([bottom_left,top_right], stroke),
     ])
+}
+
+pub fn square_shape(pos: Pos2, size: f32, stroke: Stroke, fill: Color32) -> Shape {
+    Shape::Rect(RectShape {
+        rect: square_around_pos(pos, size),
+        corner_radius: 0.0.into(),
+        fill,
+        stroke,
+        stroke_kind: eframe::egui::StrokeKind::Middle,
+        round_to_pixels: Some(true),
+        blur_width: 0.0,
+        brush: None,
+    })
 }
 
 pub fn simple_crosshair(rect: Rect, pos: Pos2, stroke: Stroke) -> Shape {
