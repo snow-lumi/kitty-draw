@@ -1,9 +1,9 @@
 use eframe::egui::{self, Ui};
 
-use crate::buttons;
-use crate::structs::commands::KittyCommands;
-use crate::structs::kitty::Kitty;
-use crate::structs::commands::{CommandState, line::LineOptions};
+use crate::ui::buttons;
+use crate::core::commands::KittyCommands;
+use crate::core::kitty::Kitty;
+use crate::core::commands::{CommandState, line::LineOptions};
 
 fn settings_menu_fn(ui: &mut Ui, kitty: &mut Kitty ) {
     match kitty.command {
@@ -26,6 +26,6 @@ fn settings_menu_fn(ui: &mut Ui, kitty: &mut Kitty ) {
     ui.separator();
 }
 
-pub fn settings_menu_menu(state: &mut Kitty ) -> impl FnMut(&mut Ui) {
+pub fn settings_menu(state: &mut Kitty ) -> impl FnMut(&mut Ui) {
     |ui| {settings_menu_fn(ui, state);}
 }

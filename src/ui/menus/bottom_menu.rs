@@ -1,7 +1,7 @@
 use eframe::egui::{self, Ui};
 
-use crate::buttons;
-use crate::structs::kitty::Kitty;
+use crate::ui::buttons;
+use crate::core::kitty::Kitty;
 
 fn bottom_menu_fn(ui: &mut Ui, kitty: &mut Kitty ) {
     ui.horizontal(|ui| {

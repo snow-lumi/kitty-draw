@@ -1,15 +1,18 @@
 use eframe::egui::{self, Key, Pos2, Rect, Shape, Stroke, Vec2};
 use eframe::emath::{RectTransform, TSTransform};
 
-use crate::math::collide::KittyCollide;
-use crate::math::distance::KittyDistance;
-use crate::math::kitty_shapes::{KittyDisc, KittyShape};
-use crate::math::StrokelessTransformExt;
-use crate::structs::commands::select_single::SelectSingleState;
-use crate::structs::frame_state::FrameState;
-use crate::structs::{NextCommandInput, Preview};
-use crate::structs::commands::{CommandOptions, CommandResult, CommandState, KittyCommands};
+use crate::util::draw_shapes::KittyDrawShape;
+use crate::util::math::collide::KittyCollide;
+use crate::util::math::distance::KittyDistance;
+use crate::util::math::shapes::{KittyDisc, KittyPoint, KittyShape};
+use crate::util::convert::{kittyds_to_shape, kittypt_to_pos2, pos2_to_kittypt};
+use crate::core::commands::select_single::SelectSingleState;
+use crate::core::frame_state::FrameState;
+use crate::core::{NextCommandInput, Preview};
+use crate::core::commands::{CommandOptions, CommandResult, CommandState, KittyCommands};
+use crate::util::math::KittyVec2;
 
+#[derive(Debug)]
 pub struct Kitty {
     pub command: CommandState,
     pub command_options: CommandOptions,
@@ -20,7 +23,7 @@ pub struct Kitty {
     pub y_string: String,
     pub canvas_to_screen: RectTransform,
     pub canvas_initialized: bool,
-    pub canvas_contents: Vec<Shape>,
+    pub canvas_contents: Vec<KittyDrawShape>,
     pub kitty_command_stack: Vec<KittyCommands>,
 }
 
@@ -78,7 +81,7 @@ impl Kitty {
         self.canvas_to_screen.inverse()
     }
 
-    pub fn vec2_stc(&self, vec: Vec2) -> Vec2 {
+    pub fn vec2_screen_to_canvas_scale(&self, vec: Vec2) -> Vec2 {
         let scale = self.screen_to_canvas().scale();
         Vec2 {
             x: vec.x * scale.x,
@@ -97,7 +100,7 @@ impl Kitty {
 
     pub fn canvas_drag(&mut self, amount: Vec2) {
         self.canvas_to_screen = RectTransform::from_to(
-            TSTransform::from_translation(- self.vec2_stc(amount)).mul_rect(*self.canvas_to_screen.from()),
+            TSTransform::from_translation(- self.vec2_screen_to_canvas_scale(amount)).mul_rect(*self.canvas_to_screen.from()),
             *self.canvas_to_screen.to(),
         );
     }
@@ -110,18 +113,18 @@ impl Kitty {
 
     pub fn click_select(&self, pos: Pos2) -> Option<usize> {
         let shapes = self.canvas_contents.clone();
-        let pointer_in_canvas = self.screen_to_canvas().transform_pos(pos);
+        let pointer_in_canvas = self.pos_to_canvas(pos);
         let pointer_disc = KittyDisc::new(pointer_in_canvas, self.screen_to_canvas().scale().x * 10.0);
 
         shapes.iter()
             .enumerate()
             .filter(|&(_index,shape)| -> bool {
-                let shape_k: KittyShape = KittyShape::from((*shape).clone());
+                let shape_k: KittyShape = shape.clone().get_shape();
                 shape_k.collides(pointer_disc.clone())
             })
             .map(|(index,shape)| -> (usize,f32) {
-                let shape_k: KittyShape = KittyShape::from((*shape).clone());
-                (index,shape_k.distance_kitty(pointer_in_canvas))
+                let shape_k: KittyShape = shape.clone().get_shape();
+                (index,shape_k.distance(pointer_in_canvas))
             })
             .fold(None, |acc ,(index,dist)| -> Option<(usize,f32)> {
                 match acc {
@@ -138,11 +141,11 @@ impl Kitty {
             .map(|(index,_)| -> usize {index})
     }
 
-    pub fn pointer_offset(&self) -> Vec2 {
+    pub fn pointer_offset(&self) -> KittyVec2 {
         (self.x_string.parse().unwrap_or(0.0),self.y_string.parse().unwrap_or(0.0)).into()
     }
 
-    pub fn handle_mouse_input_canvas(&mut self, frame_state: &FrameState, pos: Pos2, des_pointer: Pos2) {
+    pub fn handle_mouse_input_canvas(&mut self, frame_state: &FrameState, pos: Pos2, des_pointer: KittyPoint) {
 
         // scroll zoom
         let scroll_event = frame_state.events
@@ -214,7 +217,7 @@ impl Kitty {
             let _ = result.remove(index);
         }
         result.iter().map(|shape| -> egui::Shape {
-            shape.clone().transform_kitty(self.canvas_to_screen)
+            self.shape_to_screen(shape.clone())
         }).collect()
     }
 
@@ -226,10 +229,22 @@ impl Kitty {
             _ => vec![],
         }
     }
+
+    pub fn pos_to_canvas(&self, pos: Pos2) -> KittyPoint {
+        pos2_to_kittypt(pos, self.screen_to_canvas())
+    }
+
+    pub fn pos_to_screen(&self, pos: KittyPoint) -> Pos2 {
+        kittypt_to_pos2(pos, self.canvas_to_screen)
+    }
+
+    pub fn shape_to_screen(&self, shape: KittyDrawShape) -> Shape {
+        kittyds_to_shape(shape, self.canvas_to_screen)
+    }
 }
 
 impl NextCommandInput<()> for Kitty {
-    fn next_input(&mut self, _: (), pos: Pos2) -> CommandResult {
+    fn next_input(&mut self, _: (), pos: KittyPoint) -> CommandResult {
         match &mut self.command {
             CommandState::Noop => CommandResult::Nothing,
             CommandState::SelectSingle(_state) => CommandResult::Nothing,

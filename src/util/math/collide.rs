@@ -1,10 +1,9 @@
-use eframe::egui::Pos2;
-
-use crate::math::pga::dot_prod::KittyDotPGA;
-use crate::math::pga::regressive_prod::KittyRegressivePGA;
-use crate::math::pga::wedge_prod::KittyWedgePGA;
-use crate::math::kitty_shapes::*;
-use crate::math::pga::KittyPointPGA;
+use super::distance::KittyDistance;
+use super::pga::dot_prod::KittyDotPGA;
+use super::pga::regressive_prod::KittyRegressivePGA;
+use super::pga::wedge_prod::KittyWedgePGA;
+use super::shapes::*;
+use super::pga::KittyPointPGA;
 
 pub trait KittyCollide<B> {
     fn collides(&self, other: B) -> bool;
@@ -13,10 +12,12 @@ pub trait KittyCollide<B> {
 impl KittyCollide<KittyLineSegment> for KittyShape {
     fn collides(&self, other: KittyLineSegment) -> bool {
         match self {
-            // KittyShape::LineSegment(..) => todo!(),
-            KittyShape::Disc(disc) => disc.collides(other),
-            KittyShape::Circle(circle) => circle.collides(other),
-            _ => false,
+            Self::Nothing => false,
+            Self::Point(..) => todo!(),
+            Self::LineSegment(..) => todo!(),
+            Self::Rectangle(..) => todo!(),
+            Self::Disc(disc) => disc.collides(other),
+            Self::Circle(circle) => circle.collides(other),
         }
     }
 }
@@ -24,17 +25,18 @@ impl KittyCollide<KittyLineSegment> for KittyShape {
 impl KittyCollide<KittyDisc> for KittyShape {
     fn collides(&self, other: KittyDisc) -> bool {
         match self {
-            KittyShape::Point(point) => other.collides(*point),
-            KittyShape::LineSegment(line) => other.collides(line.clone()),
-            KittyShape::Disc(_disc) => todo!(),
-            KittyShape::Circle(_circle) => todo!(),
-            _ => false,
+            Self::Nothing => false,
+            Self::Point(point) => other.collides(*point),
+            Self::LineSegment(line) => other.collides(line.clone()),
+            Self::Rectangle(..) => todo!(),
+            Self::Disc(_disc) => todo!(),
+            Self::Circle(_circle) => todo!(),
         }
     }
 }
 
-impl KittyCollide<Pos2> for KittyDisc {
-    fn collides(&self, other: Pos2) -> bool {
+impl KittyCollide<KittyPoint> for KittyDisc {
+    fn collides(&self, other: KittyPoint) -> bool {
         self.center.distance(other) <= self.radius
     }
 }
@@ -53,7 +55,7 @@ impl KittyCollide<KittyLineSegment> for KittyDisc {
         let line = start.regressive_prod(end);
         let perpendicular = center.dot_prod(line);
         let projection = line.wedge_prod(perpendicular);
-        let projection: Pos2 = projection.normalize().into();
+        let projection: KittyPoint = projection.normalize().into();
         self.center.distance(projection) <= self.radius
     }
 }
@@ -82,7 +84,13 @@ impl KittyCollide<KittyLineSegment> for KittyCircle {
         let line = start.regressive_prod(end);
         let perpendicular = center.dot_prod(line);
         let projection = line.wedge_prod(perpendicular);
-        let projection: Pos2 = projection.normalize().into();
+        let projection: KittyPoint = projection.normalize().into();
         self.center.distance(projection) <= self.radius
+    }
+}
+
+impl KittyCollide<KittyPoint> for KittyRectangle {
+    fn collides(&self, other: KittyPoint) -> bool {
+        self.x_range.contains(&other.x) && self.y_range.contains(&other.y)
     }
 }

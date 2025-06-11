@@ -1,6 +1,6 @@
 use std::ops::Mul;
 
-use crate::math::pga::*;
+use super::*;
 
 impl Mul<f32> for KittyLinePGA {
     type Output = KittyLinePGA;

@@ -1,11 +1,12 @@
-use eframe::egui::{self, Context, Pos2, Ui, Vec2};
+use eframe::egui::{self, Context, Pos2, Ui};
 
-use crate::canvas_shapes;
-use crate::structs::kitty::Kitty;
-use crate::structs::frame_state::FrameState;
-use crate::structs::Preview;
+use crate::ui::painter_shapes;
+use crate::core::kitty::Kitty;
+use crate::core::frame_state::FrameState;
+use crate::core::Preview;
+use crate::util::math::KittyVec2;
 
-fn canvas_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &FrameState ) {
+fn canvas_panel_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &FrameState ) {
     // make canvas painter
     let available_space = ui.available_size();
     let (response, painter) = ui.allocate_painter(available_space, egui::Sense::hover());
@@ -25,8 +26,8 @@ fn canvas_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &FrameS
 
             // calculate where the user wants the position of the pointer
             let des_pointer = match kitty.pointer_absolute {
-                true  => kitty.screen_to_canvas().transform_pos(Pos2::ZERO)+kitty.pointer_offset(),
-                false => kitty.screen_to_canvas().transform_pos(pos)+kitty.pointer_offset(),
+                true  => kitty.pos_to_canvas(Pos2::ZERO)+kitty.pointer_offset(),
+                false => kitty.pos_to_canvas(pos)+kitty.pointer_offset(),
             };
 
             kitty.handle_mouse_input_canvas(frame_state, pos, des_pointer);
@@ -40,12 +41,12 @@ fn canvas_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &FrameS
     }
 
     // draw origin
-    painter.add(canvas_shapes::simple_crosshair(screen_rect, kitty.canvas_origin(), egui::Stroke::new(1.0, egui::Color32::from_gray(100))));
+    painter.add(painter_shapes::simple_crosshair(screen_rect, kitty.canvas_origin(), egui::Stroke::new(1.0, egui::Color32::from_gray(100))));
 
     // draw the image
     painter.extend(kitty.canvas_draw());
 
-    // draw the image
+    // draw the selection
     if kitty.command.selecting() {
         painter.extend(kitty.selection_draw());
     }
@@ -57,18 +58,18 @@ fn canvas_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &FrameS
 
             // calculate where the user wants the position of the pointer
             let des_pointer = match kitty.pointer_absolute {
-                true  => kitty.screen_to_canvas().transform_pos(Pos2::ZERO)+kitty.pointer_offset(),
-                false => kitty.screen_to_canvas().transform_pos(pos)+kitty.pointer_offset(),
+                true  => kitty.pos_to_canvas(Pos2::ZERO)+kitty.pointer_offset(),
+                false => kitty.pos_to_canvas(pos)+kitty.pointer_offset(),
             };
 
             // draw mouse crosshair
-            painter.add(canvas_shapes::cursor_crosshair(screen_rect, pos, !kitty.pointer_absolute));
+            painter.add(painter_shapes::cursor_crosshair(screen_rect, pos, !kitty.pointer_absolute));
 
             // draw the position of the thingy ([mouse + offset] or absolute position)
-            if kitty.pointer_offset() != Vec2::ZERO
+            if kitty.pointer_offset() != KittyVec2::ZERO
             {
                 let stroke_cursor = egui::Stroke::new(1.0, egui::Color32::from_rgb(18, 100, 210));
-                painter.add(canvas_shapes::x_shape(des_pointer, 4.0, stroke_cursor));
+                painter.add(painter_shapes::x_shape(kitty.pos_to_screen(des_pointer), 4.0, stroke_cursor));
             }
 
             painter.add(kitty.preview((), pos));
@@ -76,6 +77,6 @@ fn canvas_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &FrameS
     }
 }
 
-pub fn canvas(ctx: &Context, kitty: &mut Kitty, frame_data: &FrameState) -> impl FnMut(&mut Ui) {
-    |ui| {canvas_fn(ctx, ui, kitty, frame_data);}
+pub fn canvas_panel(ctx: &Context, kitty: &mut Kitty, frame_data: &FrameState) -> impl FnMut(&mut Ui) {
+    |ui| {canvas_panel_fn(ctx, ui, kitty, frame_data);}
 }

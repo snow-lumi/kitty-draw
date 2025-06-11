@@ -1,3 +1,5 @@
+use crate::util::math::shapes::KittyPoint;
+
 pub mod dual;
 pub mod add;
 pub mod sub;
@@ -71,4 +73,32 @@ pub struct KittyPointNormalPGA {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct KittyPseudoVecPGA {
     pub e_0xy: f32,
+}
+
+impl From<KittyPoint> for KittyPointNormalPGA {
+    fn from(value: KittyPoint) -> Self {
+        Self {
+            e_0y: value.x,
+            e_0x: value.y,
+        }
+    }
+}
+
+impl From<KittyPoint> for KittyPointPGA {
+    fn from(value: KittyPoint) -> Self {
+        Self {
+            e_xy: 1.0,
+            e_0y: value.x,
+            e_0x: value.y,
+        }
+    }
+}
+
+impl From<KittyPointNormalPGA> for KittyPoint {
+    fn from(value: KittyPointNormalPGA) -> Self {
+        Self {
+            x: value.e_0y,
+            y: value.e_0x,
+        }
+    }
 }

@@ -1,21 +1,9 @@
-use eframe::egui::{Pos2, Rect, Shape};
-use eframe::emath::{RectTransform};
-use eframe::epaint::{CircleShape, RectShape};
+use eframe::egui::Shape;
+use eframe::emath::RectTransform;
+use eframe::epaint::*;
 
-pub mod kitty_shapes;
-pub mod collide;
-pub mod distance;
-pub mod pga;
-
-pub trait BoolToggleExt {
-    fn toggle(&mut self);
-}
-
-impl BoolToggleExt for bool {
-    fn toggle(&mut self) {
-        *self = !*self;
-    }
-}
+use crate::util::draw_shapes::KittyDrawShape;
+use crate::util::math::shapes::KittyPoint;
 
 pub trait StrokelessTransformExt {
     fn transform_kitty(&self, transform: RectTransform) -> Self;
@@ -50,37 +38,35 @@ impl StrokelessTransformExt for Shape {
     }
 }
 
-impl From<Pos2> for pga::KittyPointNormalPGA {
-    fn from(value: Pos2) -> Self {
-        Self {
-            e_0y: value.x,
-            e_0x: value.y,
-        }
+pub fn pos2_to_kittypt(pos: Pos2, transform: RectTransform) -> KittyPoint {
+    let pos_t = transform.transform_pos(pos);
+    KittyPoint {
+        x: pos_t.x,
+        y: pos_t.y,
     }
 }
 
-impl From<Pos2> for pga::KittyPointPGA {
-    fn from(value: Pos2) -> Self {
-        Self {
-            e_xy: 1.0,
-            e_0y: value.x,
-            e_0x: value.y,
-        }
-    }
+pub fn kittypt_to_pos2(point: KittyPoint, transform: RectTransform) -> Pos2 {
+    let pos = Pos2 {
+        x: point.x,
+        y: point.y,
+    };
+    transform.transform_pos(pos)
 }
 
-impl From<pga::KittyPointNormalPGA> for Pos2 {
-    fn from(value: pga::KittyPointNormalPGA) -> Self {
-        Self {
-            x: value.e_0y,
-            y: value.e_0x,
+pub fn kittyds_to_shape(shape: KittyDrawShape, transform: RectTransform) -> Shape {
+    match shape {
+        KittyDrawShape::Nothing => Shape::Noop,
+        KittyDrawShape::LineSegment(line) => {
+            let start= kittypt_to_pos2(line.shape.start, transform);
+            let end= kittypt_to_pos2(line.shape.end, transform);
+            Shape::LineSegment {
+                points: [
+                    start,
+                    end,
+                ],
+                stroke: line.stroke,
+            }
         }
-    }
-}
-
-pub fn square_around_pos(pos: Pos2, size: f32) -> Rect {
-    Rect {
-        min: pos + (-size,-size).into(),
-        max: pos + (size,size).into(),
     }
 }

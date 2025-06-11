@@ -1,7 +1,5 @@
 use eframe::{egui::{Color32, Pos2, Rect, Shape, Stroke}, epaint::RectShape};
 
-use crate::math::square_around_pos;
-
 pub fn cursor_crosshair(rect: Rect, pos: Pos2, focus: bool) -> Shape {
     let c_defocus = Color32::from_gray(100);
     let c_x = Color32::from_rgb(189, 18, 11);
@@ -31,9 +29,9 @@ pub fn x_shape(pos: Pos2, size: f32, stroke: Stroke) -> Shape {
     ])
 }
 
-pub fn square_shape(pos: Pos2, size: f32, stroke: Stroke, fill: Color32) -> Shape {
+pub fn simple_rect_shape(rect: Rect, stroke: Stroke, fill: Color32) -> Shape {
     Shape::Rect(RectShape {
-        rect: square_around_pos(pos, size),
+        rect,
         corner_radius: 0.0.into(),
         fill,
         stroke,

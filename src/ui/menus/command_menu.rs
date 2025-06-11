@@ -1,7 +1,7 @@
 use eframe::egui::Ui;
 
-use crate::buttons;
-use crate::structs::{commands::Commands, kitty::Kitty};
+use crate::ui::buttons;
+use crate::core::{commands::Commands, kitty::Kitty};
 
 fn command_menu_fn(ui: &mut Ui, kitty: &mut Kitty ) {
     ui.horizontal( |ui| {

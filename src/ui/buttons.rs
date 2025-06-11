@@ -1,8 +1,8 @@
 use eframe::egui::Ui;
 
-use crate::math::BoolToggleExt;
-use crate::structs::kitty::Kitty;
-use crate::structs::commands::{CommandState, Commands};
+use crate::util::extensions::BoolToggleExt;
+use crate::core::kitty::Kitty;
+use crate::core::commands::{CommandState, Commands};
 
 pub fn command_button(ui: &mut Ui, mrrp: Commands, kitty: &mut Kitty) {
     let button1 = ui.button(format!("{:?}",mrrp));

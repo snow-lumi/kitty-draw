@@ -1,24 +1,29 @@
 use eframe::egui::{Pos2, Shape, Stroke};
 
-use crate::structs::commands::CommandResult;
-use crate::structs::kitty::Kitty;
-use crate::structs::{NextCommandInput, Preview};
+use crate::core::commands::CommandResult;
+use crate::core::kitty::Kitty;
+use crate::core::{NextCommandInput, Preview};
+use crate::util::draw_shapes::KittyDrawShape;
+use crate::util::math::shapes::{KittyLineSegment, KittyPoint};
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum LineState {
     Nothing,
-    StartPoint(Pos2),
+    StartPoint(KittyPoint),
 }
 
 impl NextCommandInput<(LineOptions,Stroke)> for LineState {
-    fn next_input(&mut self, (options,stroke): (LineOptions,Stroke), pos_in: Pos2) -> CommandResult{
+    fn next_input(&mut self, (options,stroke): (LineOptions,Stroke), pos_in: KittyPoint) -> CommandResult{
         match self {
             Self::Nothing => {
                 *self = Self::StartPoint(pos_in);
                 CommandResult::Nothing
             },
             Self::StartPoint(pos_1) => {
-                let line = Shape::LineSegment { points: [*pos_1,pos_in], stroke };
+                let line = KittyDrawShape::line_segment( KittyLineSegment {
+                    start: *pos_1,
+                    end: pos_in,
+                }, stroke);
                 *self = match options {
                     LineOptions::Separate => Self::Nothing,
                     LineOptions::Connected => Self::StartPoint(pos_in),
@@ -36,7 +41,7 @@ impl Preview<&Kitty> for LineState {
             Self::StartPoint(pos_1) => {
                 Shape::LineSegment {
                     points: [
-                        kitty.canvas_to_screen.transform_pos(pos_1),
+                        kitty.pos_to_screen(pos_1),
                         pos
                     ],
                     stroke: kitty.stroke,
@@ -46,7 +51,7 @@ impl Preview<&Kitty> for LineState {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum LineOptions {
     Separate,
     Connected,

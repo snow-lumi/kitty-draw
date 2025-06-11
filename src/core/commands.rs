@@ -1,12 +1,10 @@
-use eframe::egui;
-
-use crate::structs::commands::select_single::SelectSingleState;
+use crate::{core::commands::select_single::SelectSingleState, util::draw_shapes::KittyDrawShape};
 
 pub mod line;
 pub mod circle;
 pub mod select_single;
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum CommandState {
     Noop,
     SelectSingle(select_single::SelectSingleState),
@@ -66,10 +64,10 @@ impl Commands {
 #[derive(PartialEq, Clone, Debug)]
 pub enum CommandResult {
     Nothing,
-    Shape(egui::Shape),
+    Shape(KittyDrawShape),
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct CommandOptions {
     pub line: line::LineOptions
 }
