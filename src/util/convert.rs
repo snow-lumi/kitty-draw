@@ -62,14 +62,14 @@ pub fn kittyrect_to_rect(rect: KittyRectangle) -> Rect {
 pub fn rect_to_kittyrect(rect: Rect) -> Option<KittyRectangle> {
     KittyRectangle::from_points(
         pos2_to_kittypt(rect.min),
-        pos2_to_kittypt(rect.min),
+        pos2_to_kittypt(rect.max),
     )
 }
 
 pub fn kittyrect_to_rect_t(rect: KittyRectangle, transform: RectTransform) -> Rect {
     let rect = Rect {
-        min: (*(rect.x_range.start()),*(rect.y_range.start())).into(),
-        max: (*(rect.x_range.end()),*(rect.y_range.end())).into(),
+        min: (*(rect.x_range.start()),*(rect.y_range.end())).into(),
+        max: (*(rect.x_range.end()),*(rect.y_range.start())).into(),
     };
     transform.transform_rect(rect)
 }

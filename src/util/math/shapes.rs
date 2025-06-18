@@ -89,7 +89,7 @@ pub struct KittyRectangle {
 
 impl KittyRectangle {
     pub fn from_points(start: KittyPoint, end: KittyPoint) -> Option<KittyRectangle> {
-        let (small_x,big_x) = sort_pair((start.x,end.y)).unwrap(); // _or(return None);
+        let (small_x,big_x) = sort_pair((start.x,end.x)).unwrap(); // _or(return None);
         let (small_y,big_y) = sort_pair((start.y,end.y)).unwrap(); // _or(return None);
         Some(KittyRectangle {
             x_range: (small_x..=big_x),

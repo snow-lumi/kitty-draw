@@ -26,6 +26,9 @@ pub struct Kitty {
     pub canvas_contents: Vec<KittyDrawShape>,
     pub kitty_command_stack: Vec<KittyCommands>,
     pub zoom_rect: Option<KittyRectangle>,
+
+    pub pointer_pos: Option<Pos2>,
+    pub drag_pos: Option<Pos2>,
 }
 
 impl Kitty {
@@ -52,6 +55,10 @@ impl Kitty {
             canvas_contents: vec![],
             kitty_command_stack: vec![],
             zoom_rect: None,
+
+
+            pointer_pos: None,
+            drag_pos: None,
         }
     }
 
@@ -148,6 +155,8 @@ impl Kitty {
     }
 
     pub fn handle_mouse_input_canvas(&mut self, frame_state: &FrameState, pos: Pos2, des_pointer: KittyPoint) {
+        self.pointer_pos = Some(pos);
+
         // scroll zoom
         let scroll_event = frame_state.events
             .iter()
@@ -190,8 +199,13 @@ impl Kitty {
             }
         }
 
+        self.drag_pos = None; 
+
         if frame_state.raw_pointer.is_decidedly_dragging() {
+            self.drag_pos = frame_state.raw_pointer.press_origin();
+
             if let Some(drag_start) = frame_state.raw_pointer.press_origin(){
+
                 if frame_state.raw_pointer.primary_down() {
                     #[expect(clippy::single_match)]
                     match self.command {

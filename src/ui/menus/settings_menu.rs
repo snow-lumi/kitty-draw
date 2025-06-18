@@ -27,6 +27,17 @@ fn settings_menu_fn(ui: &mut Ui, kitty: &mut Kitty ) {
     });
 
     ui.separator();
+
+
+    ui.label(format!("pointer: {:#?}",kitty.pointer_pos));
+    ui.label(format!("drag: {:#?}",kitty.drag_pos));
+    ui.label(format!("zoom: {:#?}",kitty.zoom_rect));
+    ui.label(format!(
+        "zoom: {:#?}",
+        kitty.zoom_rect.clone().map( |x| -> _ {
+            crate::util::convert::kittyrect_to_rect_t(x,kitty.canvas_to_screen)
+        }),
+    ));
 }
 
 pub fn settings_menu(state: &mut Kitty ) -> impl FnMut(&mut Ui) {
