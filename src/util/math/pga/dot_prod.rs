@@ -10,7 +10,7 @@ impl KittyDotPGA<KittyLinePGA> for KittyLinePGA {
     type Output = f32;
 
     fn dot_prod(self, other: KittyLinePGA) -> Self::Output {
-        self.e_x * other.e_x + self.e_y + other.e_y
+        self.e_x * other.e_x + self.e_y * other.e_y
     }
 }
 

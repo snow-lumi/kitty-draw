@@ -36,3 +36,33 @@ impl From<(f32,f32)> for KittyVec2 {
 impl KittyVec2 {
     pub const ZERO: Self = Self { x: 0.0 , y: 0.0};
 }
+
+pub fn sort_pair<T: PartialOrd>((first,second): (T,T)) -> Option<(T,T)> {
+    if first <= second {
+        Some((first, second))
+    } else if first > second {
+        Some((second, first))
+    } else {
+        println!("guh!");
+        None
+    }
+}
+
+pub fn weird_rect_func(inner: KittyRectangle, outer: KittyRectangle) -> KittyRectangle {
+    let (x_range,y_range) = if inner.aspect_ratio() > outer.aspect_ratio() {
+        let x_center = (inner.x_range.start() + inner.x_range.end()) / 2.0;
+        let x_radius = (outer.x_range.end() - outer.x_range.start()) / 2.0;
+        (
+            (x_center-x_radius)..=(x_center+x_radius),
+            inner.y_range,
+        )
+    } else {
+        let y_center = (inner.y_range.start() + inner.y_range.end()) / 2.0;
+        let y_radius = (outer.y_range.end() - outer.y_range.start()) / 2.0;
+        (
+            inner.x_range,
+            (y_center-y_radius)..=(y_center+y_radius),
+        )
+    };
+    KittyRectangle { x_range, y_range }
+}

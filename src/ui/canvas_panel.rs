@@ -1,9 +1,10 @@
-use eframe::egui::{self, Context, Pos2, Ui};
+use eframe::egui::{self, Color32, Context, Pos2, Stroke, StrokeKind, Ui};
 
 use crate::ui::painter_shapes;
 use crate::core::kitty::Kitty;
 use crate::core::frame_state::FrameState;
 use crate::core::Preview;
+use crate::util::convert::kittyrect_to_rect_t;
 use crate::util::math::KittyVec2;
 
 fn canvas_panel_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &FrameState ) {
@@ -49,6 +50,20 @@ fn canvas_panel_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &
     // draw the selection
     if kitty.command.selecting() {
         painter.extend(kitty.selection_draw());
+    }
+
+    // preview drag zoom
+    if let Some(zoom_rect) = kitty.zoom_rect.clone() {
+        painter.rect(
+            kittyrect_to_rect_t(zoom_rect,kitty.canvas_to_screen),
+            0.0,
+            Color32::TRANSPARENT,
+            Stroke {
+                width: 1.0,
+                color: Color32::WHITE,
+            },
+            StrokeKind::Middle,
+        );
     }
 
     // draw mouse thingies

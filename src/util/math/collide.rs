@@ -1,9 +1,11 @@
 use super::distance::KittyDistance;
+use super::shapes::*;
+use super::pga::KittyPointPGA;
+use super::pga::size::KittySizePGA;
+use super::pga::dual::KittyDualPGA;
 use super::pga::dot_prod::KittyDotPGA;
 use super::pga::regressive_prod::KittyRegressivePGA;
 use super::pga::wedge_prod::KittyWedgePGA;
-use super::shapes::*;
-use super::pga::KittyPointPGA;
 
 pub trait KittyCollide<B> {
     fn collides(&self, other: B) -> bool;
@@ -55,8 +57,18 @@ impl KittyCollide<KittyLineSegment> for KittyDisc {
         let line = start.regressive_prod(end);
         let perpendicular = center.dot_prod(line);
         let projection = line.wedge_prod(perpendicular);
-        let projection: KittyPoint = projection.normalize().into();
-        self.center.distance(projection) <= self.radius
+        let projection_n = projection.normalize().into();
+        let intersects_with_inf_line = self.center.distance(projection_n) <= self.radius;
+        let bla = (KittyPointPGA::from(projection.normalize()) - start).dual();
+        let mrrp = (end - start).dual();
+        let meow = bla.dot_prod(mrrp);
+        let bark = mrrp.size_sq();
+        let woof = meow >= 0.0;
+        let yelp = meow <= bark;
+        println!("bla: {:#?}", bla);
+        println!("mrrp: {:#?}", mrrp);
+        println!("mew :3 {meow} {bark}");
+        intersects_with_inf_line && woof && yelp
     }
 }
 

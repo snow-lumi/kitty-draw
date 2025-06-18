@@ -4,13 +4,13 @@ use eframe::emath::{RectTransform, TSTransform};
 use crate::util::draw_shapes::KittyDrawShape;
 use crate::util::math::collide::KittyCollide;
 use crate::util::math::distance::KittyDistance;
-use crate::util::math::shapes::{KittyDisc, KittyPoint, KittyShape};
-use crate::util::convert::{kittyds_to_shape, kittypt_to_pos2, pos2_to_kittypt};
+use crate::util::math::shapes::{KittyDisc, KittyPoint, KittyRectangle, KittyShape};
+use crate::util::convert::{kittyds_to_shape, kittypt_to_pos2_t, kittyrect_to_rect, pos2_to_kittypt_t, rect_to_kittyrect};
 use crate::core::commands::select_single::SelectSingleState;
 use crate::core::frame_state::FrameState;
 use crate::core::{NextCommandInput, Preview};
 use crate::core::commands::{CommandOptions, CommandResult, CommandState, KittyCommands};
-use crate::util::math::KittyVec2;
+use crate::util::math::{weird_rect_func, KittyVec2};
 
 #[derive(Debug)]
 pub struct Kitty {
@@ -25,6 +25,7 @@ pub struct Kitty {
     pub canvas_initialized: bool,
     pub canvas_contents: Vec<KittyDrawShape>,
     pub kitty_command_stack: Vec<KittyCommands>,
+    pub zoom_rect: Option<KittyRectangle>,
 }
 
 impl Kitty {
@@ -50,6 +51,7 @@ impl Kitty {
             canvas_initialized: false,
             canvas_contents: vec![],
             kitty_command_stack: vec![],
+            zoom_rect: None,
         }
     }
 
@@ -74,7 +76,7 @@ impl Kitty {
     }
 
     pub fn canvas_origin(&self) -> Pos2 {
-        self.canvas_to_screen.transform_pos(Pos2::ZERO)
+        self.pos_to_screen(KittyPoint::ZERO)
     }
 
     pub fn screen_to_canvas(&self) -> RectTransform {
@@ -146,7 +148,6 @@ impl Kitty {
     }
 
     pub fn handle_mouse_input_canvas(&mut self, frame_state: &FrameState, pos: Pos2, des_pointer: KittyPoint) {
-
         // scroll zoom
         let scroll_event = frame_state.events
             .iter()
@@ -189,17 +190,48 @@ impl Kitty {
             }
         }
 
-
-        if let CommandState::SelectSingle(state) = &mut (self.command) {
-            if frame_state.raw_pointer.is_decidedly_dragging() && frame_state.raw_pointer.primary_down() {
-                if let Some(drag_start) = frame_state.raw_pointer.press_origin() {
-                    self.command = state.drag(self, drag_start, pos);
+        if frame_state.raw_pointer.is_decidedly_dragging() {
+            if let Some(drag_start) = frame_state.raw_pointer.press_origin(){
+                if frame_state.raw_pointer.primary_down() {
+                    #[expect(clippy::single_match)]
+                    match self.command {
+                        CommandState::SelectSingle(state) => {
+                            self.command = state.drag(self, drag_start, pos);
+                        }
+                        _ => (),
+                    }
                 }
-            } else if let SelectSingleState::Dragging(index, _) = *state {
-                *state = SelectSingleState::Selected(index);
+
+                if frame_state.raw_pointer.secondary_down() {
+                    self.zoom_rect = KittyRectangle::from_points(
+                        self.pos_to_canvas(drag_start),
+                        self.pos_to_canvas(pos),
+                    )
+                }
             }
         }
 
+        if !(frame_state.raw_pointer.primary_down()) {
+            #[expect(clippy::single_match,clippy::collapsible_match)]
+            match self.command {
+                CommandState::SelectSingle(state) => {
+                    match state {
+                        SelectSingleState::Dragging(index, _) => {
+                            self.command = CommandState::select_single(index);
+                        }
+                        _ => (),
+                    }
+                },
+                _ => (),
+            }
+        }
+
+        #[expect(clippy::collapsible_if)]
+        if !(frame_state.raw_pointer.secondary_down()) {
+            if self.zoom_rect.is_some() {
+                self.drag_zoom_apply();
+            }
+        }
     }
 
     pub fn do_kitty_commands(&mut self, screen_rect: Rect) {
@@ -231,15 +263,23 @@ impl Kitty {
     }
 
     pub fn pos_to_canvas(&self, pos: Pos2) -> KittyPoint {
-        pos2_to_kittypt(pos, self.screen_to_canvas())
+        pos2_to_kittypt_t(pos, self.screen_to_canvas())
     }
 
     pub fn pos_to_screen(&self, pos: KittyPoint) -> Pos2 {
-        kittypt_to_pos2(pos, self.canvas_to_screen)
+        kittypt_to_pos2_t(pos, self.canvas_to_screen)
     }
 
     pub fn shape_to_screen(&self, shape: KittyDrawShape) -> Shape {
         kittyds_to_shape(shape, self.canvas_to_screen)
+    }
+
+    pub fn drag_zoom_apply(&mut self) {
+        self.canvas_to_screen = RectTransform::from_to(
+            kittyrect_to_rect(weird_rect_func(self.zoom_rect.clone().unwrap(), rect_to_kittyrect(*self.canvas_to_screen.to()).unwrap())),
+            *self.canvas_to_screen.to(),
+        );
+        self.zoom_rect = None;
     }
 }
 

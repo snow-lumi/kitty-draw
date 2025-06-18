@@ -3,42 +3,23 @@ use eframe::emath::RectTransform;
 use eframe::epaint::*;
 
 use crate::util::draw_shapes::KittyDrawShape;
-use crate::util::math::shapes::KittyPoint;
+use crate::util::math::shapes::{KittyPoint, KittyRectangle};
 
-pub trait StrokelessTransformExt {
-    fn transform_kitty(&self, transform: RectTransform) -> Self;
-}
-
-impl StrokelessTransformExt for Shape {
-    fn transform_kitty(&self, transform: RectTransform) -> Self {
-        let mut result = self.clone();
-        match &mut result {
-            Shape::Noop => (),
-            Shape::LineSegment { points,..} => {
-                *points = points.map(|p| {
-                    transform.transform_pos(p)
-                });
-            },
-            Shape::Circle(CircleShape { center, radius,  .. }) => {
-                *center = transform.transform_pos(*center);
-                *radius *= transform.scale().x;
-            },
-            Shape::Rect(RectShape { rect, corner_radius, .. }) => {
-                *rect = transform.transform_rect(*rect);
-                *corner_radius *= transform.scale().x;
-            },
-            Shape::Vec(vec) => {
-                *vec = vec.iter().map(|shape| -> Shape {
-                    shape.transform_kitty(transform)
-                }).collect();
-            }
-            _ => todo!(), // TODO
-        }
-        result
+pub fn pos2_to_kittypt(pos: Pos2) -> KittyPoint {
+    KittyPoint {
+        x: pos.x,
+        y: pos.y,
     }
 }
 
-pub fn pos2_to_kittypt(pos: Pos2, transform: RectTransform) -> KittyPoint {
+// pub fn kittypt_to_pos2(point: KittyPoint) -> Pos2 {
+//     Pos2 {
+//         x: point.x,
+//         y: point.y,
+//     }
+// }
+
+pub fn pos2_to_kittypt_t(pos: Pos2, transform: RectTransform) -> KittyPoint {
     let pos_t = transform.transform_pos(pos);
     KittyPoint {
         x: pos_t.x,
@@ -46,7 +27,7 @@ pub fn pos2_to_kittypt(pos: Pos2, transform: RectTransform) -> KittyPoint {
     }
 }
 
-pub fn kittypt_to_pos2(point: KittyPoint, transform: RectTransform) -> Pos2 {
+pub fn kittypt_to_pos2_t(point: KittyPoint, transform: RectTransform) -> Pos2 {
     let pos = Pos2 {
         x: point.x,
         y: point.y,
@@ -58,8 +39,8 @@ pub fn kittyds_to_shape(shape: KittyDrawShape, transform: RectTransform) -> Shap
     match shape {
         KittyDrawShape::Nothing => Shape::Noop,
         KittyDrawShape::LineSegment(line) => {
-            let start= kittypt_to_pos2(line.shape.start, transform);
-            let end= kittypt_to_pos2(line.shape.end, transform);
+            let start= kittypt_to_pos2_t(line.shape.start, transform);
+            let end= kittypt_to_pos2_t(line.shape.end, transform);
             Shape::LineSegment {
                 points: [
                     start,
@@ -69,4 +50,26 @@ pub fn kittyds_to_shape(shape: KittyDrawShape, transform: RectTransform) -> Shap
             }
         }
     }
+}
+
+pub fn kittyrect_to_rect(rect: KittyRectangle) -> Rect {
+    Rect {
+        min: (*(rect.x_range.start()),*(rect.y_range.start())).into(),
+        max: (*(rect.x_range.end()),*(rect.y_range.end())).into(),
+    }
+}
+
+pub fn rect_to_kittyrect(rect: Rect) -> Option<KittyRectangle> {
+    KittyRectangle::from_points(
+        pos2_to_kittypt(rect.min),
+        pos2_to_kittypt(rect.min),
+    )
+}
+
+pub fn kittyrect_to_rect_t(rect: KittyRectangle, transform: RectTransform) -> Rect {
+    let rect = Rect {
+        min: (*(rect.x_range.start()),*(rect.y_range.start())).into(),
+        max: (*(rect.x_range.end()),*(rect.y_range.end())).into(),
+    };
+    transform.transform_rect(rect)
 }

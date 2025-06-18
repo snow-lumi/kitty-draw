@@ -1,5 +1,6 @@
 use crate::util::math::shapes::KittyPoint;
 
+pub mod size;
 pub mod dual;
 pub mod add;
 pub mod sub;
@@ -7,6 +8,7 @@ pub mod mul;
 pub mod dot_prod;
 pub mod wedge_prod;
 pub mod regressive_prod;
+pub mod util;
 
 #[expect(dead_code)]
 #[derive(Clone, Copy, Debug, PartialEq)]

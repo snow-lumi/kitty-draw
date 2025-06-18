@@ -22,6 +22,9 @@ fn settings_menu_fn(ui: &mut Ui, kitty: &mut Kitty ) {
     buttons::func_button(ui, "Home".to_owned(), || {
         kitty.kitty_command_stack.push(KittyCommands::CanvasHome);
     });
+    buttons::func_button(ui, "Clear".to_owned(), || {
+        kitty.canvas_contents.clear();
+    });
 
     ui.separator();
 }

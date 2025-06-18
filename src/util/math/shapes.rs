@@ -1,6 +1,6 @@
 use std::ops::{Add, RangeInclusive};
 
-use crate::util::math::KittyVec2;
+use crate::util::math::{sort_pair, KittyVec2};
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum LinePoint {
@@ -56,7 +56,6 @@ impl Add<KittyVec2> for KittyPoint {
 }
 
 impl KittyPoint {
-    #[expect(dead_code)]
     pub const ZERO: Self = Self { x: 0.0 , y: 0.0};
 }
 
@@ -86,6 +85,21 @@ impl KittyLineSegment {
 pub struct KittyRectangle {
     pub x_range: RangeInclusive<f32>,
     pub y_range: RangeInclusive<f32>,
+}
+
+impl KittyRectangle {
+    pub fn from_points(start: KittyPoint, end: KittyPoint) -> Option<KittyRectangle> {
+        let (small_x,big_x) = sort_pair((start.x,end.y)).unwrap(); // _or(return None);
+        let (small_y,big_y) = sort_pair((start.y,end.y)).unwrap(); // _or(return None);
+        Some(KittyRectangle {
+            x_range: (small_x..=big_x),
+            y_range: (small_y..=big_y),
+        })
+    }
+
+    pub fn aspect_ratio(&self) -> f32 {
+        (self.x_range.end() - self.x_range.start()) / (self.y_range.end() - self.y_range.start())
+    }
 }
 
 #[derive(Clone, Debug)]
