@@ -1,6 +1,6 @@
 use std::ops::{Add, RangeInclusive};
 
-use crate::util::math::{sort_pair, KittyVec2};
+use crate::util::math::{sort_pair, KittyLengthExt, KittyVec2};
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum LinePoint {
@@ -97,8 +97,8 @@ impl KittyRectangle {
         })
     }
 
-    pub fn aspect_ratio(&self) -> f32 {
-        (self.x_range.end() - self.x_range.start()) / (self.y_range.end() - self.y_range.start())
+    pub fn aspect_ratio_x_y(&self) -> f32 {
+        self.x_range.clone().length() / self.y_range.clone().length()
     }
 }
 
