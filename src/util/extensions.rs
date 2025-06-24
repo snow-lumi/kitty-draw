@@ -29,6 +29,15 @@ impl ChangeColorExt for KittyDrawShape {
                     },
                 )
             }
+            Self::Circle(circle) => {
+                Self::circle(
+                    circle.shape.clone(),
+                    Stroke {
+                        width: circle.stroke.width,
+                        color,
+                    },
+                )
+            }
         }
     }
 }

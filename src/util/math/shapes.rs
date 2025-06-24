@@ -55,6 +55,12 @@ impl Add<KittyVec2> for KittyPoint {
     }
 }
 
+impl From<(f32,f32)> for KittyPoint {
+    fn from((x,y): (f32,f32)) -> Self {
+        Self { x, y }
+    }
+}
+
 impl KittyPoint {
     pub const ZERO: Self = Self { x: 0.0 , y: 0.0};
 }
@@ -102,13 +108,13 @@ impl KittyRectangle {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct KittyCircle {
     pub center: KittyPoint,
     pub radius: f32,
 }
 
-#[derive(Clone, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct KittyDisc {
     pub center: KittyPoint,
     pub radius: f32,

@@ -1,7 +1,7 @@
 use eframe::egui::{self, Key, Pos2, Rect, Shape, Stroke, Vec2};
 use eframe::emath::{RectTransform, TSTransform};
 
-use crate::util::draw_shapes::KittyDrawShape;
+use crate::util::draw_shapes::{KittyDrawShape, KittyGetShape};
 use crate::util::math::collide::KittyCollide;
 use crate::util::math::distance::KittyDistance;
 use crate::util::math::shapes::{KittyDisc, KittyPoint, KittyRectangle, KittyShape};

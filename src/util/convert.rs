@@ -49,6 +49,16 @@ pub fn kittyds_to_shape(shape: KittyDrawShape, transform: RectTransform) -> Shap
                 stroke: line.stroke,
             }
         }
+        KittyDrawShape::Circle(circle) => {
+            Shape::Circle(
+                CircleShape {
+                    center: kittypt_to_pos2_t(circle.shape.center, transform),
+                    radius: circle.shape.radius * transform.scale().x,
+                    fill: Color32::TRANSPARENT,
+                    stroke: circle.stroke,
+                },
+            )
+        }
     }
 }
 
