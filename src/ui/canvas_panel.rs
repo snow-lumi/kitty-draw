@@ -18,8 +18,6 @@ fn canvas_panel_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &
 
     kitty.do_kitty_commands(screen_rect);
 
-    kitty.pointer_pos = None;
-
     // handle mouse input
     match frame_state.pointer_in(screen_rect) {
         None => (),

@@ -39,7 +39,6 @@ pub struct Kitty {
     pub kitty_command_stack: Vec<KittyCommands>,
     pub zoom_rect: Option<KittyRectangle>,
 
-    pub pointer_pos: Option<Pos2>,
     pub drag_pos: Option<Pos2>,
 }
 
@@ -70,10 +69,124 @@ impl Kitty {
             kitty_command_stack: vec![],
             zoom_rect: None,
 
-
-            pointer_pos: None,
             drag_pos: None,
         }
+    }
+
+    pub fn handle_mouse_input_canvas(&mut self, frame_state: &FrameState, pos: Pos2, des_pointer: KittyPoint) {
+
+        self.scroll_zoom(frame_state, pos);
+        
+        // middle drag
+        if frame_state.raw_pointer.middle_down() {
+            self.canvas_drag(frame_state.raw_pointer.delta());
+        }
+
+        self.left_click(frame_state, pos, des_pointer);
+
+        self.blehmrow(frame_state, pos);
+    }
+
+    fn scroll_zoom(&mut self, frame_state: &FrameState, pos: Pos2) {
+        let scroll_event = frame_state.events
+            .iter()
+            .find(|e| -> bool {
+                matches!(e, egui::Event::MouseWheel {..})
+            });
+
+        if let Some(egui::Event::MouseWheel { unit: _, delta, modifiers }) = scroll_event {
+            let amount = match *modifiers {
+                egui::Modifiers::NONE => (1.1_f32).powf(-delta.y),
+                egui::Modifiers::ALT => (1.03_f32).powf(-delta.y),
+                _ => 1.0,
+            };
+            self.canvas_zoom(amount, pos);
+        }
+    }
+
+    fn left_click(&mut self, frame_state: &FrameState, pos: Pos2, des_pointer: KittyPoint) {
+        if frame_state.raw_pointer.primary_clicked() {
+            match self.next_input((), des_pointer) {
+                CommandResult::Nothing => (),
+                CommandResult::Shape(shape) => {
+                    self.canvas_contents.push(shape);
+                }
+            }
+
+            if self.command.idling() {
+                match self.click_select(pos) {
+                    None => {
+                        self.command = CommandState::Noop;
+                    },
+                    Some(index) => {
+                        self.command = CommandState::select_single(index);
+                    }
+                }
+            }
+        }
+    }
+
+    fn blehmrow(&mut self, frame_state: &FrameState, pos: Pos2) {
+        self.drag_pos = None; 
+
+        if frame_state.raw_pointer.is_decidedly_dragging() {
+            self.drag_pos = frame_state.raw_pointer.press_origin();
+
+            if let Some(drag_start) = frame_state.raw_pointer.press_origin(){
+
+                if frame_state.raw_pointer.primary_down() {
+                    #[expect(clippy::single_match)]
+                    match self.command {
+                        CommandState::SelectSingle(state) => {
+                            self.command = state.drag(self, drag_start, pos);
+                        }
+                        _ => (),
+                    }
+                }
+
+                if frame_state.raw_pointer.secondary_down() {
+                    self.zoom_rect = KittyRectangle::from_points(
+                        self.pos_to_canvas(drag_start),
+                        self.pos_to_canvas(pos),
+                    )
+                }
+            }
+        }
+
+        if !(frame_state.raw_pointer.primary_down()) {
+            #[expect(clippy::single_match,clippy::collapsible_match)]
+            match self.command {
+                CommandState::SelectSingle(state) => {
+                    match state {
+                        SelectSingleState::Dragging(index, _) => {
+                            self.command = CommandState::select_single(index);
+                        }
+                        _ => (),
+                    }
+                },
+                _ => (),
+            }
+        }
+
+        #[expect(clippy::collapsible_if)]
+        if !(frame_state.raw_pointer.secondary_down()) {
+            if self.zoom_rect.is_some() {
+                self.drag_zoom_apply();
+            }
+        }
+    }
+
+    pub fn update_canvas(&mut self, screen_rect: Rect) {
+        if !self.canvas_initialized {
+            self.initialize_canvas(screen_rect);
+        }
+        if let Some(last_screen_rect) = self.last_screen_rect {
+            if screen_rect != last_screen_rect {
+                let new_canvas_rect = (RectTransform::from_to(last_screen_rect,screen_rect)).transform_rect(*self.canvas_to_screen.from());
+                self.canvas_to_screen = RectTransform::from_to(new_canvas_rect,screen_rect)
+            }
+        }
+        self.last_screen_rect = Some(screen_rect);
     }
 
     fn initialize_canvas(&mut self, screen_rect: Rect) {
@@ -94,19 +207,6 @@ impl Kitty {
             screen_flipped,
         );
         self.canvas_initialized = true;
-    }
-
-    pub fn update_canvas(&mut self, screen_rect: Rect) {
-        if !self.canvas_initialized {
-            self.initialize_canvas(screen_rect);
-        }
-        if let Some(last_screen_rect) = self.last_screen_rect {
-            if screen_rect != last_screen_rect {
-                let new_canvas_rect = (RectTransform::from_to(last_screen_rect,screen_rect)).transform_rect(*self.canvas_to_screen.from());
-                self.canvas_to_screen = RectTransform::from_to(new_canvas_rect,screen_rect)
-            }
-        }
-        self.last_screen_rect = Some(screen_rect);
     }
 
     pub fn canvas_origin(&self) -> Pos2 {
@@ -179,100 +279,6 @@ impl Kitty {
 
     pub fn pointer_offset(&self) -> KittyVec2 {
         (self.x_string.parse().unwrap_or(0.0),self.y_string.parse().unwrap_or(0.0)).into()
-    }
-
-    pub fn handle_mouse_input_canvas(&mut self, frame_state: &FrameState, pos: Pos2, des_pointer: KittyPoint) {
-        self.pointer_pos = Some(pos);
-
-        // scroll zoom
-        let scroll_event = frame_state.events
-            .iter()
-            .find(|e| -> bool {
-                matches!(e, egui::Event::MouseWheel {..})
-            });
-
-        if let Some(egui::Event::MouseWheel { unit: _, delta, modifiers }) = scroll_event {
-            let amount = match *modifiers {
-                egui::Modifiers::NONE => (1.1_f32).powf(-delta.y),
-                egui::Modifiers::ALT => (1.03_f32).powf(-delta.y),
-                _ => 1.0,
-            };
-            self.canvas_zoom(amount, pos);
-        }
-        
-        // middle drag
-        if frame_state.raw_pointer.middle_down() {
-            self.canvas_drag(frame_state.raw_pointer.delta());
-        }
-
-        // left click
-        if frame_state.raw_pointer.primary_clicked() {
-            match self.next_input((), des_pointer) {
-                CommandResult::Nothing => (),
-                CommandResult::Shape(shape) => {
-                    self.canvas_contents.push(shape);
-                }
-            }
-
-            if self.command.idling() {
-                match self.click_select(pos) {
-                    None => {
-                        self.command = CommandState::Noop;
-                    },
-                    Some(index) => {
-                        self.command = CommandState::select_single(index);
-                    }
-                }
-            }
-        }
-
-        self.drag_pos = None; 
-
-        if frame_state.raw_pointer.is_decidedly_dragging() {
-            self.drag_pos = frame_state.raw_pointer.press_origin();
-
-            if let Some(drag_start) = frame_state.raw_pointer.press_origin(){
-
-                if frame_state.raw_pointer.primary_down() {
-                    #[expect(clippy::single_match)]
-                    match self.command {
-                        CommandState::SelectSingle(state) => {
-                            self.command = state.drag(self, drag_start, pos);
-                        }
-                        _ => (),
-                    }
-                }
-
-                if frame_state.raw_pointer.secondary_down() {
-                    self.zoom_rect = KittyRectangle::from_points(
-                        self.pos_to_canvas(drag_start),
-                        self.pos_to_canvas(pos),
-                    )
-                }
-            }
-        }
-
-        if !(frame_state.raw_pointer.primary_down()) {
-            #[expect(clippy::single_match,clippy::collapsible_match)]
-            match self.command {
-                CommandState::SelectSingle(state) => {
-                    match state {
-                        SelectSingleState::Dragging(index, _) => {
-                            self.command = CommandState::select_single(index);
-                        }
-                        _ => (),
-                    }
-                },
-                _ => (),
-            }
-        }
-
-        #[expect(clippy::collapsible_if)]
-        if !(frame_state.raw_pointer.secondary_down()) {
-            if self.zoom_rect.is_some() {
-                self.drag_zoom_apply();
-            }
-        }
     }
 
     pub fn do_kitty_commands(&mut self, screen_rect: Rect) {
