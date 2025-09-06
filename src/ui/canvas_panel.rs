@@ -14,9 +14,7 @@ fn canvas_panel_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &
     let screen_rect = response.rect;
 
     // initialize canvas
-    if !kitty.canvas_initialized {
-        kitty.initialize_canvas(screen_rect);
-    }
+    kitty.update_canvas(screen_rect);
 
     kitty.do_kitty_commands(screen_rect);
 

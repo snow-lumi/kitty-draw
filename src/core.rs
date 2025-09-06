@@ -33,7 +33,8 @@ pub struct Kitty {
     pub x_string: String,
     pub y_string: String,
     pub canvas_to_screen: RectTransform,
-    pub canvas_initialized: bool,
+    canvas_initialized: bool,
+    last_screen_rect: Option<Rect>,
     pub canvas_contents: Vec<KittyDrawShape>,
     pub kitty_command_stack: Vec<KittyCommands>,
     pub zoom_rect: Option<KittyRectangle>,
@@ -64,6 +65,7 @@ impl Kitty {
                 },
             ),
             canvas_initialized: false,
+            last_screen_rect: None,
             canvas_contents: vec![],
             kitty_command_stack: vec![],
             zoom_rect: None,
@@ -74,7 +76,7 @@ impl Kitty {
         }
     }
 
-    pub fn initialize_canvas(&mut self, screen_rect: Rect) {
+    fn initialize_canvas(&mut self, screen_rect: Rect) {
         let center = screen_rect.center();
         let canvas_rect = screen_rect.translate(center.to_vec2() * -1.0);
         let screen_flipped = Rect {
@@ -92,6 +94,19 @@ impl Kitty {
             screen_flipped,
         );
         self.canvas_initialized = true;
+    }
+
+    pub fn update_canvas(&mut self, screen_rect: Rect) {
+        if !self.canvas_initialized {
+            self.initialize_canvas(screen_rect);
+        }
+        if let Some(last_screen_rect) = self.last_screen_rect {
+            if screen_rect != last_screen_rect {
+                let new_canvas_rect = (RectTransform::from_to(last_screen_rect,screen_rect)).transform_rect(*self.canvas_to_screen.from());
+                self.canvas_to_screen = RectTransform::from_to(new_canvas_rect,screen_rect)
+            }
+        }
+        self.last_screen_rect = Some(screen_rect);
     }
 
     pub fn canvas_origin(&self) -> Pos2 {
