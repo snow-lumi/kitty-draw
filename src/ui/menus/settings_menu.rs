@@ -23,7 +23,7 @@ fn settings_menu_fn(ui: &mut Ui, kitty: &mut Kitty ) {
         kitty.kitty_command_stack.push(KittyCommands::CanvasHome);
     });
     buttons::func_button(ui, "Clear".to_owned(), || {
-        kitty.canvas_contents.clear();
+        kitty.canvas.contents.clear();
     });
 
     ui.separator();
@@ -34,7 +34,7 @@ fn settings_menu_fn(ui: &mut Ui, kitty: &mut Kitty ) {
     ui.label(format!(
         "zoom: {:#?}",
         kitty.zoom_rect.clone().map( |x| -> _ {
-            crate::util::convert::kittyrect_to_rect_t(x,kitty.canvas_to_screen)
+            crate::util::convert::kittyrect_to_rect_t(x,kitty.canvas.to_screen)
         }),
     ));
 }

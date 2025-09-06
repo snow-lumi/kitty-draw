@@ -4,7 +4,7 @@ use crate::core::Kitty;
 pub mod buttons;
 pub mod menus;
 pub mod painter_shapes;
-pub mod canvas_panel;
+pub mod canvas;
 
 pub fn draw_ui(ctx: &egui::Context, kitty: &mut Kitty) {
         // menu where you can choose commands
@@ -22,11 +22,11 @@ pub fn draw_ui(ctx: &egui::Context, kitty: &mut Kitty) {
 }
 
 #[derive(Default, Debug)]
-pub struct UiIds {
+pub struct UiMem {
     pub bottom_interactable: Option<egui::Id>,
 }
 
-impl UiIds {
+impl UiMem {
     pub fn focus_bottom(&self, ui: &mut egui::Ui) {
         if let Some(meow) = self.bottom_interactable {
             ui.memory_mut(|mem| -> _ {mem.request_focus(meow)});

@@ -13,7 +13,7 @@ pub fn command_button(ui: &mut Ui, command: Commands, kitty: &mut Kitty ) {
             kitty.command.noop();
         } else {
             kitty.command.start(command);
-            kitty.ui_ids.focus_bottom(ui);
+            kitty.ui_mem.focus_bottom(ui);
         }
     }
     if kitty.command.into_command() == command {

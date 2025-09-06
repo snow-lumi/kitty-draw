@@ -22,7 +22,7 @@ impl SelectSingleState {
         let pos_canvas = (*kitty).pos_to_canvas(pos);
         match self {
             Self::Selected(index) => {
-                match kitty.canvas_contents.get_mut(index) {
+                match kitty.canvas.contents.get_mut(index) {
                     None => panic!(),
                     Some(KittyDrawShape::LineSegment(line)) => {
                         let mut arr = LinePoint::ALL.iter()
@@ -58,7 +58,7 @@ impl SelectSingleState {
                 }
             }
             Self::Dragging(index, point_id ) => {
-                match kitty.canvas_contents.get_mut(index) {
+                match kitty.canvas.contents.get_mut(index) {
                     None => panic!(),
                     Some(KittyDrawShape::LineSegment(line)) => {
                         match point_id {
@@ -82,7 +82,7 @@ impl SelectSingleState {
             Self::Selected(index) => (index,None),
             Self::Dragging(index, point_index) => (index,Some(point_index)),
         };
-        let selection = kitty.canvas_contents.get(index);
+        let selection = kitty.canvas.contents.get(index);
         match selection {
             None => (),
             Some(shape) => {

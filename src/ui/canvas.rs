@@ -1,7 +1,9 @@
-use eframe::egui::{self, Color32, Context, Pos2, Stroke, StrokeKind, Ui};
+use eframe::egui::{self, Color32, Context, Pos2, Rect, Stroke, StrokeKind, Ui};
+use eframe::emath::RectTransform;
 
 use crate::ui::painter_shapes;
 use crate::core::Kitty;
+use crate::util::draw_shapes::KittyDrawShape;
 use crate::core::frame_state::FrameState;
 use crate::core::Preview;
 use crate::util::convert::kittyrect_to_rect_t;
@@ -14,7 +16,7 @@ fn canvas_panel_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &
     let screen_rect = response.rect;
 
     // initialize canvas
-    kitty.update_canvas(screen_rect);
+    kitty.canvas.update(screen_rect);
 
     kitty.do_kitty_commands(screen_rect);
 
@@ -53,7 +55,7 @@ fn canvas_panel_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &
     // preview drag zoom
     if let Some(zoom_rect) = kitty.zoom_rect.clone() {
         painter.rect(
-            kittyrect_to_rect_t(zoom_rect,kitty.canvas_to_screen),
+            kittyrect_to_rect_t(zoom_rect,kitty.canvas.to_screen),
             0.0,
             Color32::TRANSPARENT,
             Stroke {
@@ -92,4 +94,69 @@ fn canvas_panel_fn(ctx: &Context, ui: &mut Ui, kitty: &mut Kitty, frame_state: &
 
 pub fn canvas_panel(ctx: &Context, kitty: &mut Kitty, frame_data: &FrameState) -> impl FnMut(&mut Ui) {
     |ui| {canvas_panel_fn(ctx, ui, kitty, frame_data);}
+}
+
+#[derive(Debug)]
+pub struct Canvas {
+    initialized: bool,
+    last_screen_rect: Option<Rect>,
+    pub contents: Vec<KittyDrawShape>,
+    pub to_screen: RectTransform,
+}
+
+impl Canvas {
+    pub fn new() -> Self {
+        Self {
+            initialized: false,
+            last_screen_rect: None,
+            contents: vec![],
+            to_screen: RectTransform::from_to(
+                Rect {
+                    min: (0.0,0.0).into(),
+                    max: (1.0,1.0).into(), 
+                },
+                Rect {
+                    min: (0.0,0.0).into(),
+                    max: (1.0,-1.0).into(),
+                },
+            ),
+        }
+    }
+
+    pub fn update(&mut self, screen_rect: Rect) {
+        if !self.initialized {
+            self.initialize(screen_rect);
+        }
+        if let Some(last_screen_rect) = self.last_screen_rect {
+            if screen_rect != last_screen_rect {
+                let new_canvas_rect = (RectTransform::from_to(last_screen_rect,screen_rect)).transform_rect(*self.to_screen.from());
+                self.to_screen = RectTransform::from_to(new_canvas_rect,screen_rect)
+            }
+        }
+        self.last_screen_rect = Some(screen_rect);
+    }
+
+    pub fn initialize(&mut self, screen_rect: Rect) {
+        let center = screen_rect.center();
+        let canvas_rect = screen_rect.translate(center.to_vec2() * -1.0);
+        let screen_flipped = Rect {
+            min: Pos2 {
+                x: screen_rect.min.x,
+                y: screen_rect.max.y,
+            },
+            max: Pos2 {
+                x: screen_rect.max.x,
+                y: screen_rect.min.y,
+            },
+        };
+        self.to_screen = RectTransform::from_to(
+            canvas_rect,
+            screen_flipped,
+        );
+        self.initialized = true;
+    }
+
+    pub fn from_screen(&self) -> RectTransform {
+        self.to_screen.inverse()
+    }
 }

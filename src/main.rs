@@ -26,7 +26,7 @@ fn main() -> eframe::Result {
 
         ui::draw_ui(ctx, &mut kitty);
 
-        egui::CentralPanel::default().show(ctx, ui::canvas_panel::canvas_panel(ctx, &mut kitty, &frame_state));
+        egui::CentralPanel::default().show(ctx, ui::canvas::canvas_panel(ctx, &mut kitty, &frame_state));
 
     })
 }

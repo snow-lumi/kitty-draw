@@ -17,7 +17,7 @@ fn bottom_menu_fn(ui: &mut Ui, kitty: &mut Kitty ) {
         // origin behavior
         buttons::bool_button(ui, "Show Origin".to_string(), &mut kitty.show_origin);
 
-        kitty.ui_ids.bottom_interactable = Some(meow.id);
+        kitty.ui_mem.bottom_interactable = Some(meow.id);
     });
 }
 

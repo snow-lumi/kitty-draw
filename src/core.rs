@@ -24,7 +24,8 @@ pub trait Preview<O> {
 
 #[derive(Debug)]
 pub struct Kitty {
-    pub ui_ids: crate::ui::UiIds,
+    pub ui_mem: crate::ui::UiMem,
+    pub canvas: crate::ui::canvas::Canvas,
     pub command: CommandState,
     pub command_options: CommandOptions,
     pub show_origin: bool,
@@ -32,20 +33,16 @@ pub struct Kitty {
     pub stroke: Stroke,
     pub x_string: String,
     pub y_string: String,
-    pub canvas_to_screen: RectTransform,
-    canvas_initialized: bool,
-    last_screen_rect: Option<Rect>,
-    pub canvas_contents: Vec<KittyDrawShape>,
     pub kitty_command_stack: Vec<KittyCommands>,
     pub zoom_rect: Option<KittyRectangle>,
-
     pub drag_pos: Option<Pos2>,
 }
 
 impl Kitty {
     pub fn new() -> Self {
         Self {
-            ui_ids: crate::ui::UiIds::default(),
+            ui_mem: crate::ui::UiMem::default(),
+            canvas: crate::ui::canvas::Canvas::new(),
             command: CommandState::Noop,
             command_options: CommandOptions::default(),
             show_origin: true,
@@ -53,22 +50,8 @@ impl Kitty {
             stroke: egui::Stroke::new(1.0, egui::Color32::WHITE),
             x_string: String::default(),
             y_string: String::default(),
-            canvas_to_screen: RectTransform::from_to(
-                Rect {
-                    min: (0.0,0.0).into(),
-                    max: (1.0,1.0).into(), 
-                },
-                Rect {
-                    min: (0.0,0.0).into(),
-                    max: (1.0,-1.0).into(),
-                },
-            ),
-            canvas_initialized: false,
-            last_screen_rect: None,
-            canvas_contents: vec![],
             kitty_command_stack: vec![],
             zoom_rect: None,
-
             drag_pos: None,
         }
     }
@@ -109,7 +92,7 @@ impl Kitty {
             match self.next_input((), des_pointer) {
                 CommandResult::Nothing => (),
                 CommandResult::Shape(shape) => {
-                    self.canvas_contents.push(shape);
+                    self.canvas.contents.push(shape);
                 }
             }
 
@@ -176,49 +159,12 @@ impl Kitty {
         }
     }
 
-    pub fn update_canvas(&mut self, screen_rect: Rect) {
-        if !self.canvas_initialized {
-            self.initialize_canvas(screen_rect);
-        }
-        if let Some(last_screen_rect) = self.last_screen_rect {
-            if screen_rect != last_screen_rect {
-                let new_canvas_rect = (RectTransform::from_to(last_screen_rect,screen_rect)).transform_rect(*self.canvas_to_screen.from());
-                self.canvas_to_screen = RectTransform::from_to(new_canvas_rect,screen_rect)
-            }
-        }
-        self.last_screen_rect = Some(screen_rect);
-    }
-
-    fn initialize_canvas(&mut self, screen_rect: Rect) {
-        let center = screen_rect.center();
-        let canvas_rect = screen_rect.translate(center.to_vec2() * -1.0);
-        let screen_flipped = Rect {
-            min: Pos2 {
-                x: screen_rect.min.x,
-                y: screen_rect.max.y,
-            },
-            max: Pos2 {
-                x: screen_rect.max.x,
-                y: screen_rect.min.y,
-            },
-        };
-        self.canvas_to_screen = RectTransform::from_to(
-            canvas_rect,
-            screen_flipped,
-        );
-        self.canvas_initialized = true;
-    }
-
     pub fn canvas_origin(&self) -> Pos2 {
         self.pos_to_screen(KittyPoint::ZERO)
     }
 
-    pub fn screen_to_canvas(&self) -> RectTransform {
-        self.canvas_to_screen.inverse()
-    }
-
     pub fn vec2_screen_to_canvas_scale(&self, vec: Vec2) -> Vec2 {
-        let scale = self.screen_to_canvas().scale();
+        let scale = self.canvas.from_screen().scale();
         Vec2 {
             x: vec.x * scale.x,
             y: vec.y * scale.y,
@@ -226,18 +172,18 @@ impl Kitty {
     }
 
     pub fn canvas_zoom(&mut self, amount: f32, center: Pos2) {
-        let center_in_canvas = self.screen_to_canvas().transform_pos(center);
+        let center_in_canvas = self.canvas.from_screen().transform_pos(center);
         let scale_trans = TSTransform::from_translation(center_in_canvas.to_vec2()) * TSTransform::from_scaling(amount) * TSTransform::from_translation(center_in_canvas.to_vec2()*-1.0);
-        self.canvas_to_screen = RectTransform::from_to(
-            scale_trans.mul_rect(*self.canvas_to_screen.from()),
-            *self.canvas_to_screen.to(),
+        self.canvas.to_screen = RectTransform::from_to(
+            scale_trans.mul_rect(*self.canvas.to_screen.from()),
+            *self.canvas.to_screen.to(),
         );
     }
 
     pub fn canvas_drag(&mut self, amount: Vec2) {
-        self.canvas_to_screen = RectTransform::from_to(
-            TSTransform::from_translation(- self.vec2_screen_to_canvas_scale(amount)).mul_rect(*self.canvas_to_screen.from()),
-            *self.canvas_to_screen.to(),
+        self.canvas.to_screen = RectTransform::from_to(
+            TSTransform::from_translation(- self.vec2_screen_to_canvas_scale(amount)).mul_rect(*self.canvas.to_screen.from()),
+            *self.canvas.to_screen.to(),
         );
     }
 
@@ -248,9 +194,9 @@ impl Kitty {
     }
 
     pub fn click_select(&self, pos: Pos2) -> Option<usize> {
-        let shapes = self.canvas_contents.clone();
+        let shapes = self.canvas.contents.clone();
         let pointer_in_canvas = self.pos_to_canvas(pos);
-        let pointer_disc = KittyDisc::new(pointer_in_canvas, self.screen_to_canvas().scale().x * 10.0);
+        let pointer_disc = KittyDisc::new(pointer_in_canvas, self.canvas.from_screen().scale().x * 10.0);
 
         shapes.iter()
             .enumerate()
@@ -284,14 +230,14 @@ impl Kitty {
     pub fn do_kitty_commands(&mut self, screen_rect: Rect) {
         for cmd in self.kitty_command_stack.clone() {
             match cmd {
-                KittyCommands::CanvasHome => self.initialize_canvas(screen_rect),
+                KittyCommands::CanvasHome => self.canvas.initialize(screen_rect),
             }
         }
         self.kitty_command_stack = vec![];
     }
 
     pub fn canvas_draw(&self) -> Vec<Shape> {
-        let mut result = self.canvas_contents.clone();
+        let mut result = self.canvas.contents.clone();
         if let CommandState::SelectSingle(SelectSingleState::Selected(index)) = self.command {
             let _ = result.remove(index);
         }
@@ -310,21 +256,21 @@ impl Kitty {
     }
 
     pub fn pos_to_canvas(&self, pos: Pos2) -> KittyPoint {
-        pos2_to_kittypt_t(pos, self.screen_to_canvas())
+        pos2_to_kittypt_t(pos, self.canvas.from_screen())
     }
 
     pub fn pos_to_screen(&self, pos: KittyPoint) -> Pos2 {
-        kittypt_to_pos2_t(pos, self.canvas_to_screen)
+        kittypt_to_pos2_t(pos, self.canvas.to_screen)
     }
 
     pub fn shape_to_screen(&self, shape: KittyDrawShape) -> Shape {
-        kittyds_to_shape(shape, self.canvas_to_screen)
+        kittyds_to_shape(shape, self.canvas.to_screen)
     }
 
     pub fn drag_zoom_apply(&mut self) {
-        self.canvas_to_screen = RectTransform::from_to(
-            kittyrect_to_rect(weird_rect_func(self.zoom_rect.clone().unwrap(), rect_to_kittyrect(*self.canvas_to_screen.to()).unwrap())),
-            *self.canvas_to_screen.to(),
+        self.canvas.to_screen = RectTransform::from_to(
+            kittyrect_to_rect(weird_rect_func(self.zoom_rect.clone().unwrap(), rect_to_kittyrect(*self.canvas.to_screen.to()).unwrap())),
+            *self.canvas.to_screen.to(),
         );
         self.zoom_rect = None;
     }
