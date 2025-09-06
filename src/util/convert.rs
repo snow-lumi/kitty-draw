@@ -78,8 +78,8 @@ pub fn rect_to_kittyrect(rect: Rect) -> Option<KittyRectangle> {
 
 pub fn kittyrect_to_rect_t(rect: KittyRectangle, transform: RectTransform) -> Rect {
     let rect = Rect {
-        min: (*(rect.x_range.start()),*(rect.y_range.end())).into(),
-        max: (*(rect.x_range.end()),*(rect.y_range.start())).into(),
+        min: (*(rect.x_range.start()),*(rect.y_range.start())).into(),
+        max: (*(rect.x_range.end()),*(rect.y_range.end())).into(),
     };
     transform.transform_rect(rect)
 }
