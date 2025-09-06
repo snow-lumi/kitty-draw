@@ -2,7 +2,7 @@ use eframe::egui::{self, Ui};
 
 use crate::ui::buttons;
 use crate::core::commands::KittyCommands;
-use crate::core::kitty::Kitty;
+use crate::core::Kitty;
 use crate::core::commands::{CommandState, line::LineOptions};
 
 fn settings_menu_fn(ui: &mut Ui, kitty: &mut Kitty ) {
@@ -27,7 +27,6 @@ fn settings_menu_fn(ui: &mut Ui, kitty: &mut Kitty ) {
     });
 
     ui.separator();
-
 
     ui.label(format!("pointer: {:#?}",kitty.pointer_pos));
     ui.label(format!("drag: {:#?}",kitty.drag_pos));

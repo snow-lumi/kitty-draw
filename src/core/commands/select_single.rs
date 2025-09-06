@@ -1,14 +1,14 @@
 use eframe::egui::{Color32, Pos2, Rect, Shape, Stroke};
 
-use crate::ui::painter_shapes;
+use super::CommandState;
+use super::super::Kitty;
 use crate::util::draw_shapes::KittyDrawShape;
 use crate::util::extensions::ChangeColorExt;
 use crate::util::math::collide::KittyCollide;
 use crate::util::math::distance::KittyDistance;
 use crate::util::math::shapes::{KittyPoint, LinePoint, ShapePoint};
 use crate::util::math::{square_around_point, square_around_pos};
-use crate::core::commands::CommandState;
-use crate::core::kitty::*;
+use crate::ui::painter_shapes;
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum SelectSingleState {

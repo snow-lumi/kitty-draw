@@ -65,9 +65,9 @@ impl KittyCollide<KittyLineSegment> for KittyDisc {
         let bark = mrrp.size_sq();
         let woof = meow >= 0.0;
         let yelp = meow <= bark;
-        println!("bla: {:#?}", bla);
-        println!("mrrp: {:#?}", mrrp);
-        println!("mew :3 {meow} {bark}");
+        // println!("bla: {:#?}", bla);
+        // println!("mrrp: {:#?}", mrrp);
+        // println!("mew :3 {meow} {bark}");
         intersects_with_inf_line && woof && yelp
     }
 }

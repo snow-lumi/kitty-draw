@@ -40,6 +40,14 @@ impl CommandState {
     pub fn selecting(&self) -> bool {
         matches!(*self, Self::SelectSingle(..))
     }
+
+    pub fn noop(&mut self) {
+        *self = Self::Noop;
+    }
+
+    pub fn start(&mut self, command: Commands) {
+        *self = command.starting_state();
+    }
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug)]

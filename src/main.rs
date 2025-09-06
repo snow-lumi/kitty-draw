@@ -4,8 +4,8 @@ mod ui;
 mod util;
 mod core;
 
-use crate::core::frame_state::FrameState;
-use crate::core::kitty::Kitty;
+use core::frame_state::FrameState;
+use core::Kitty;
 
 fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
@@ -24,18 +24,7 @@ fn main() -> eframe::Result {
 
         kitty.handle_keyboard_input(&frame_state);
 
-        // menu where you can choose commands
-        egui::TopBottomPanel::top("woof")
-            .show_separator_line(true)
-            .show(ctx, ui::menus::command_menu::command_menu(&mut kitty));
-
-        // menu that controls canvas and pointer behavior
-        egui::TopBottomPanel::bottom("meow")
-            .show_separator_line(true)
-            .show(ctx, ui::menus::bottom_menu::bottom_menu(&mut kitty));
-
-        // context menu that controls the current command
-        egui::SidePanel::right("boioing").show(ctx, ui::menus::settings_menu::settings_menu(&mut kitty));
+        ui::draw_ui(ctx, &mut kitty);
 
         egui::CentralPanel::default().show(ctx, ui::canvas_panel::canvas_panel(ctx, &mut kitty, &frame_state));
 

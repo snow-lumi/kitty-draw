@@ -1,13 +1,13 @@
 use eframe::egui::{self, Ui};
 
 use crate::ui::buttons;
-use crate::core::kitty::Kitty;
+use crate::core::Kitty;
 
 fn bottom_menu_fn(ui: &mut Ui, kitty: &mut Kitty ) {
     ui.horizontal(|ui| {
         // pointer coordinates
         ui.label("x: ");
-        ui.add_sized((70.0,20.0), egui::TextEdit::singleline(&mut kitty.x_string));
+        let meow = ui.add_sized((70.0,20.0), egui::TextEdit::singleline(&mut kitty.x_string));
         ui.label("y: ");
         ui.add_sized((70.0,20.0), egui::TextEdit::singleline(&mut kitty.y_string));
 
@@ -16,9 +16,11 @@ fn bottom_menu_fn(ui: &mut Ui, kitty: &mut Kitty ) {
 
         // origin behavior
         buttons::bool_button(ui, "Show Origin".to_string(), &mut kitty.show_origin);
+
+        kitty.ui_ids.bottom_interactable = Some(meow.id);
     });
 }
 
-pub fn bottom_menu(state: &mut Kitty ) -> impl FnMut(&mut Ui) {
-    |ui| {bottom_menu_fn(ui, state);}
+pub fn bottom_menu(kitty: &mut Kitty) -> impl FnMut(&mut Ui) {
+    |ui| {bottom_menu_fn(ui, kitty);}
 }

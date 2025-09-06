@@ -1,19 +1,22 @@
 use eframe::egui::Ui;
 
-use crate::util::extensions::BoolToggleExt;
-use crate::core::kitty::Kitty;
-use crate::core::commands::{CommandState, Commands};
 
-pub fn command_button(ui: &mut Ui, mrrp: Commands, kitty: &mut Kitty) {
-    let button1 = ui.button(format!("{:?}",mrrp));
+
+use crate::util::extensions::BoolToggleExt;
+use crate::core::Kitty;
+use crate::core::commands::Commands;
+
+pub fn command_button(ui: &mut Ui, command: Commands, kitty: &mut Kitty ) {
+    let button1 = ui.button(format!("{:?}", command));
     if button1.clicked() {
-        kitty.command = if kitty.command.into_command() == mrrp {
-            CommandState::Noop
+        if kitty.command.into_command() == command {
+            kitty.command.noop();
         } else {
-            mrrp.starting_state()
+            kitty.command.start(command);
+            kitty.ui_ids.focus_bottom(ui);
         }
     }
-    if kitty.command.into_command() == mrrp {
+    if kitty.command.into_command() == command {
         button1.highlight();
     }
 }

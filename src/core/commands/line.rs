@@ -1,8 +1,7 @@
 use eframe::egui::{Pos2, Shape, Stroke};
 
-use crate::core::commands::CommandResult;
-use crate::core::kitty::Kitty;
-use crate::core::{NextCommandInput, Preview};
+use super::CommandResult;
+use super::super::*;
 use crate::util::draw_shapes::KittyDrawShape;
 use crate::util::math::shapes::{KittyLineSegment, KittyPoint};
 

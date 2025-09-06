@@ -1,7 +1,7 @@
 use eframe::egui::{self, Color32, Context, Pos2, Stroke, StrokeKind, Ui};
 
 use crate::ui::painter_shapes;
-use crate::core::kitty::Kitty;
+use crate::core::Kitty;
 use crate::core::frame_state::FrameState;
 use crate::core::Preview;
 use crate::util::convert::kittyrect_to_rect_t;
